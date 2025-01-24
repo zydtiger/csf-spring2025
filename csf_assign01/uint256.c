@@ -41,15 +41,16 @@ char *uint256_format_as_hex( UInt256 val ) {
 // Index 0 is the least significant 32 bits, index 7 is the most
 // significant 32 bits.
 uint32_t uint256_get_bits( UInt256 val, unsigned index ) {
-  uint32_t bits;
-  // TODO: implement
-  return bits;
+  return val.data[index];
 }
 
 // Return 1 if bit at given index is set, 0 otherwise.
 int uint256_is_bit_set( UInt256 val, unsigned index ) {
-  // TODO: implement
-  return 0;
+  unsigned index_32bits = index / 32;
+  unsigned bit_position = index - index_32bits * 32;
+  uint32_t target_bits = uint256_get_bits(val, index_32bits);
+  uint32_t mask = (1 << bit_position);
+  return target_bits & mask;
 }
 
 // Compute the sum of two UInt256 values.
