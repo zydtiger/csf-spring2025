@@ -9,7 +9,10 @@
 // all other bits are set to 0.
 UInt256 uint256_create_from_u32( uint32_t val ) {
   UInt256 result;
-  // TODO: implement
+  result.bits[0] = val;
+  for (int i = 0; i < 8; i++){
+    result.bits[i] = 0
+  }
   return result;
 }
 
@@ -18,7 +21,9 @@ UInt256 uint256_create_from_u32( uint32_t val ) {
 // at index 7 is the most significant.
 UInt256 uint256_create( const uint32_t data[8] ) {
   UInt256 result;
-  // TODO: implement
+  for (i = 0; i < 8; i++){
+    result.bits[i] = data[i];
+  }
   return result;
 }
 
