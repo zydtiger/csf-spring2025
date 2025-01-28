@@ -11,7 +11,7 @@ UInt256 uint256_create_from_u32( uint32_t val ) {
   UInt256 result;
   result.data[0] = val;
   for (int i = 1; i < 8; i++){
-    result.data[i] = 0;
+    result.data[i] = 0U;
   }
   return result;
 }
@@ -55,7 +55,7 @@ int uint256_is_bit_set( UInt256 val, unsigned index ) {
   unsigned bit_position = index - index_32bits * 32;
   uint32_t target_bits = uint256_get_bits(val, index_32bits);
   uint32_t mask = (1 << bit_position);
-  return target_bits & mask;
+  return (target_bits & mask) != 0;
 }
 
 // Compute the sum of two UInt256 values.
