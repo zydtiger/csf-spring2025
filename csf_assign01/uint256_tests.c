@@ -180,6 +180,12 @@ void test_create_from_hex( TestObjs *objs ) {
 
   UInt256 max = uint256_create_from_hex( "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" );
   ASSERT_SAME( objs->max, max );
+
+  // adds custom number with all hexadecimal digits
+  uint32_t buf[8] = { 4157789414U, 2713254372U, 760111812U, 2409516925U, 2902555U, 0U, 0U, 0U };
+  UInt256 number1 = uint256_create( buf );
+  UInt256 number1_hex = uint256_create_from_hex( "2c4a1b8f9e4f7d2d4e62c4a1b8f9e4f7d2d4e6" );
+  ASSERT_SAME( number1, number1_hex );
 }
 
 void test_format_as_hex( TestObjs *objs ) {

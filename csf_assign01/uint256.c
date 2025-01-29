@@ -29,8 +29,17 @@ UInt256 uint256_create( const uint32_t data[8] ) {
 
 // Create a UInt256 value from a string of hexadecimal digits.
 UInt256 uint256_create_from_hex( const char *hex ) {
-  UInt256 result;
-  // TODO: implement
+  uint32_t units[8] = {0};
+  int hex_len = strlen(hex);
+  int cnt=0;
+  for (int i=hex_len-1; i>=0 && cnt<8; i-=8, cnt++) {
+    int unit_start = (i-7<0) ? 0 : (i-7);
+    int unit_len = i-unit_start+1;
+    char unit[9] = {0};
+    strncpy(unit, &hex[unit_start], unit_len);
+    units[cnt] = strtoul(unit, NULL, 16);
+  }
+  UInt256 result = uint256_create(units);  
   return result;
 }
 
