@@ -202,6 +202,13 @@ void test_format_as_hex( TestObjs *objs ) {
   s = uint256_format_as_hex( objs->max );
   ASSERT( 0 == strcmp( "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", s ) );
   free( s );
+
+  // adds custom number with all hexadecimal digits
+  uint32_t buf[8] = { 4157789414U, 2713254372U, 760111812U, 2409516925U, 2902555U, 0U, 0U, 0U };
+  UInt256 number1 = uint256_create( buf );  
+  s = uint256_format_as_hex( number1 );
+  ASSERT( 0 == strcmp("2c4a1b8f9e4f7d2d4e62c4a1b8f9e4f7d2d4e6", s) );
+  free(s);
 }
 
 void test_add( TestObjs *objs ) {
