@@ -253,6 +253,17 @@ void test_sub( TestObjs *objs ) {
 
   result = uint256_sub( objs->zero, objs->one );
   ASSERT_SAME( objs->max, result );
+
+  // add custom subtraction
+  uint32_t number1_buf[8] = { 0U, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0U, 0U, 0U, 0xFFFFFFFFU };
+  uint32_t number2_buf[8] = { 1U, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0U, 0U, 0U, 1U };
+  uint32_t reference_buf[8] = { 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFDU };
+  UInt256 number1, number2, reference;
+  INIT_FROM_ARR( number1, number1_buf );
+  INIT_FROM_ARR( number2, number2_buf );
+  INIT_FROM_ARR( reference, reference_buf ); 
+  result = uint256_sub( number1, number2 );
+  ASSERT_SAME( result, reference );
 }
 
 void test_negate( TestObjs *objs ) {
@@ -266,6 +277,15 @@ void test_negate( TestObjs *objs ) {
 
   result = uint256_negate( objs->max );
   ASSERT_SAME( objs->one, result );
+
+  // add custom negate test
+  uint32_t number1_buf[8] = { 1U, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0U, 0U, 0U, 1U };
+  uint32_t reference_buf[8] = { 0xFFFFFFFFU, 0U, 0U, 0U, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFEU };
+  UInt256 number1, reference;
+  INIT_FROM_ARR( number1, number1_buf );
+  INIT_FROM_ARR( reference, reference_buf ); 
+  result = uint256_negate( number1 );
+  ASSERT_SAME( result, reference ); 
 }
 
 void test_neg_overflow( TestObjs *objs ) {

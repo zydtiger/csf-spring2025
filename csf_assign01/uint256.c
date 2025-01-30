@@ -95,15 +95,16 @@ UInt256 uint256_add( UInt256 left, UInt256 right ) {
 
 // Compute the difference of two UInt256 values.
 UInt256 uint256_sub( UInt256 left, UInt256 right ) {
-  UInt256 result;
-  // TODO: implement
-  return result;
+  UInt256 right_complement = uint256_negate(right);
+  return uint256_add(left, right_complement);
 }
 
 // Return the two's-complement negation of the given UInt256 value.
 UInt256 uint256_negate( UInt256 val ) {
   UInt256 result;
-  // TODO: implement
+  for (int i=0;i<8;i++)
+    result.data[i] = ~val.data[i]; // flip bits
+  result = uint256_add(result, uint256_create_from_u32(1));
   return result;
 }
 
