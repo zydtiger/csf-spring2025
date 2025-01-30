@@ -205,7 +205,8 @@ void test_format_as_hex( TestObjs *objs ) {
 
   // adds custom number with all hexadecimal digits
   uint32_t buf[8] = { 4157789414U, 2713254372U, 760111812U, 2409516925U, 2902555U, 0U, 0U, 0U };
-  UInt256 number1 = uint256_create( buf );  
+  UInt256 number1;
+  INIT_FROM_ARR( number1, buf );  
   s = uint256_format_as_hex( number1 );
   ASSERT( 0 == strcmp("2c4a1b8f9e4f7d2d4e62c4a1b8f9e4f7d2d4e6", s) );
   free(s);
@@ -228,6 +229,17 @@ void test_add( TestObjs *objs ) {
 
   result = uint256_add( objs->max, objs->one );
   ASSERT_SAME( objs->zero, result );
+
+  // add custom number addition
+  uint32_t number1_buf[8] = { 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0U, 0U, 0U, 0xFFFFFFFFU };
+  uint32_t number2_buf[8] = { 1U, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0U, 0U, 0U, 1U };
+  uint32_t reference_buf[8] = { 0U, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 1U, 0U, 0U, 0U };
+  UInt256 number1, number2, reference;
+  INIT_FROM_ARR( number1, number1_buf );
+  INIT_FROM_ARR( number2, number2_buf );
+  INIT_FROM_ARR( reference, reference_buf );
+  result = uint256_add( number1, number2 );
+  ASSERT_SAME( result, reference );
 }
 
 void test_sub( TestObjs *objs ) {

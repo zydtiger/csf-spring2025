@@ -83,8 +83,13 @@ int uint256_is_bit_set( UInt256 val, unsigned index ) {
 
 // Compute the sum of two UInt256 values.
 UInt256 uint256_add( UInt256 left, UInt256 right ) {
-  UInt256 sum;
-  // TODO: implement
+  UInt256 sum = uint256_create_from_u32(0);
+  uint32_t carry = 0;
+  for (int i=0;i<8;i++) {
+    uint64_t unit_sum = (uint64_t)left.data[i] + (uint64_t)right.data[i] + carry;
+    sum.data[i] = (uint32_t)(unit_sum & 0xFFFFFFFF);
+    carry = (unit_sum >> 32);
+  }
   return sum;
 }
 
