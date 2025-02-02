@@ -345,6 +345,35 @@ void test_mul( TestObjs *objs ) {
   ASSERT(0x617c0591U == result.data[5]);
   ASSERT(0x8b6067f7U == result.data[6]);
   ASSERT(0x4bdd4ccU == result.data[7]);
+
+  //Additional tests b02f1cb6ede8b35425d74afa2d5b28d * 360581973124896edbd202dc552f7ac = 252dba29f0d602dc666765df2d2dacde3a447449bde374fbeb79c0490401bc
+  UInt256 expected;
+  memset(&expected, 0, sizeof(expected));
+  memset(&left, 0, sizeof(left));
+  left.data[0] = 0xa2d5b28d; 
+  left.data[1] = 0x425d74af;
+  left.data[2] = 0x6ede8b35;
+  left.data[3] = 0x0b02f1cb;
+
+  memset(&right, 0, sizeof(right));
+  right.data[0] = 0xc552f7ac;  
+  right.data[1] = 0xedbd202d;
+  right.data[2] = 0x73124896;
+  right.data[3] = 0x03605819;
+  result = uint256_mul(left, right);
+
+  expected.data[0] = 0x490401bc;
+  expected.data[1] = 0xfbeb79c0;
+  expected.data[2] = 0x49bde374;
+  expected.data[3] = 0xde3a4474;
+  expected.data[4] = 0xdf2d2dac;
+  expected.data[5] = 0xdc666765;
+  expected.data[6] = 0x29f0d602;
+  expected.data[7] = 0x00252dba;
+
+  ASSERT_SAME(expected, result);
+
+
 }
 
 void test_lshift( TestObjs *objs ) {
@@ -375,4 +404,18 @@ void test_lshift( TestObjs *objs ) {
     result = uint256_lshift( val, 50U );
     ASSERT_SAME( expected, result );
   }
+
+  //Additioanl tests
+  {
+    UInt256 val = { { 0xF0000000, 0, 0, 0, 0, 0, 0, 0 } };
+    UInt256 expected = { { 0x00000000, 0x0000000F, 0, 0, 0, 0, 0, 0 } };
+    result = uint256_lshift( val, 4 );
+    ASSERT_SAME( expected, result );
+  }
+
+  UInt256 val = { { 0x12345678, 0, 0, 0, 0, 0, 0, 0 } };
+  UInt256 expected = { { 0, 0x12345678, 0, 0, 0, 0, 0, 0 } };
+  result = uint256_lshift( val, 32 );
+  ASSERT_SAME( expected, result );
+
 }

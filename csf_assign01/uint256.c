@@ -111,13 +111,37 @@ UInt256 uint256_negate( UInt256 val ) {
 // Compute the product of two UInt256 values.
 UInt256 uint256_mul( UInt256 left, UInt256 right ) {
   UInt256 product;
-  // TODO: implement
+
+  memset(&product, 0, sizeof(product));
+
+  for (unsigned i = 0; i < 256; i++){
+    if (uint256_is_bit_set(left, i)){
+      UInt256 term = uint256_lshift(right, i);
+      product = uint256_add(product, term); 
+
+    }
+  }
+
   return product;
 }
 
 UInt256 uint256_lshift( UInt256 val, unsigned shift ) {
   assert( shift < 256 );
   UInt256 result;
-  // TODO: implement
+  unsigned shift_32 = shift >> 5;
+  unsigned shift_bit = shift & 31;
+
+  memset(&result, 0, sizeof(result));
+
+  for(int i = 7; i >= (int)shift_32; i--){
+    result.data[i] = val.data[i-shift_32];
+  }
+  if(shift_bit != 0){
+    for(int i = 7; i > 0; i--){
+      result.data[i] = (result.data[i] << shift_bit) | (result.data[i-1] >> (32 - shift_bit));
+    }
+
+    result.data[0] <<= shift_bit;
+  }
   return result;
 }
