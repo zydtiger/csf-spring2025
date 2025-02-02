@@ -407,8 +407,8 @@ void test_lshift( TestObjs *objs ) {
 
   //Additioanl tests
   {
-    UInt256 val = { { 0xF0000000, 0, 0, 0, 0, 0, 0, 0 } };
-    UInt256 expected = { { 0x00000000, 0x0000000F, 0, 0, 0, 0, 0, 0 } };
+    UInt256 val = { { 0xA0000000, 0, 0, 0, 0, 0, 0, 0 } };
+    UInt256 expected = { { 0x00000000, 0x0000000A, 0, 0, 0, 0, 0, 0 } };
     result = uint256_lshift( val, 4 );
     ASSERT_SAME( expected, result );
   }
