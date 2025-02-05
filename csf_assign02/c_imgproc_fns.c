@@ -3,8 +3,44 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "imgproc.h"
+#include <stdio.h>
 
-// TODO: define your helper functions here
+// Get the red value from pixel
+uint32_t get_r( uint32_t pixel ) { return (pixel & 0xFF000000) >> 24; }
+
+// Get the green value from pixel
+uint32_t get_g( uint32_t pixel ) { return (pixel & 0x00FF0000) >> 16; }
+
+// Get the blue value from pixel
+uint32_t get_b( uint32_t pixel ) { return (pixel & 0x0000FF00) >> 8; }
+
+// Get the alpha value from pixel
+uint32_t get_a( uint32_t pixel ) { return pixel & 0x000000FF; }
+
+// Make pixel from rgba components
+uint32_t make_pixel( uint32_t r, uint32_t g, uint32_t b, uint32_t a ) {
+  return (r << 24) | (g << 16) | (b << 8) | a;
+}
+
+// Convert pixel to grayscale
+uint32_t to_grayscale( uint32_t pixel ) {
+  uint32_t r = get_r(pixel);
+  uint32_t g = get_g(pixel);
+  uint32_t b = get_b(pixel);
+  uint32_t y = ( 79 * r + 128 * g + 49 * b ) / 256;
+  return make_pixel( y, y, y, get_a(pixel) );
+}
+
+// Compute the gradient needed for pixel at index `x`
+int64_t gradient( int64_t x, int64_t max ) {
+  // TODO: implement
+  return 0;
+}
+
+// Compute the 1-dimensional index from column and row indices
+int32_t compute_index( struct Image *img, int32_t col, int32_t row ) {
+  return row * img->width + col;
+}
 
 // Convert input pixels to grayscale.
 // This transformation always succeeds.
@@ -14,7 +50,13 @@
 //   output_img - pointer to the output Image (in which the transformed
 //                pixels should be stored)
 void imgproc_grayscale( struct Image *input_img, struct Image *output_img ) {
-  // TODO: implement
+  for (int i=0;i<input_img->height;i++)
+    for (int j=0;j<input_img->width;j++) {
+      int input_index = compute_index(input_img, j, i);
+      uint32_t pixel = input_img->data[input_index];
+      int output_index = compute_index(output_img, j, i);
+      output_img->data[output_index] = to_grayscale(pixel);
+    }
 }
 
 // Render an output image containing 4 replicas of the original image,
@@ -47,17 +89,18 @@ void imgproc_grayscale( struct Image *input_img, struct Image *output_img ) {
 void imgproc_rgb( struct Image *input_img, struct Image *output_img ) {
   for (int i=0;i<input_img->height;i++)
     for (int j=0;j<input_img->width;j++) {
-      int input_index = i * input_img->width + j;
+      int input_index = compute_index(input_img, j, i);
+      uint32_t pixel = input_img->data[input_index];
+
+      int copy_index = compute_index( output_img, j,                      i                       );
+      int red_index  = compute_index( output_img, (input_img->width + j), i                       );
+      int green_index= compute_index( output_img, j,                      (input_img->height + i) );
+      int blue_index = compute_index( output_img, (input_img->width + j), (input_img->height + i) );
       
-      int copy_index = i * output_img->width + j;
-      int red_index = i * output_img->width + input_img->width + j;
-      int green_index = (input_img->height + i) * output_img->width + j;
-      int blue_index = (input_img->height + i) * output_img->width + input_img->width + j;
-      
-      output_img->data[copy_index] = input_img->data[input_index];
-      output_img->data[red_index] = input_img->data[input_index]  & 0xFF0000FF;
-      output_img->data[green_index] = input_img->data[input_index]& 0x00FF00FF;
-      output_img->data[blue_index] = input_img->data[input_index] & 0x0000FFFF;
+      output_img->data[copy_index] =  pixel;
+      output_img->data[red_index]  =  make_pixel( get_r(pixel), 0, 0, get_a(pixel) );
+      output_img->data[green_index]=  make_pixel( 0, get_g(pixel), 0, get_a(pixel) );
+      output_img->data[blue_index] =  make_pixel( 0, 0, get_b(pixel), get_a(pixel) );
     }
 }
 

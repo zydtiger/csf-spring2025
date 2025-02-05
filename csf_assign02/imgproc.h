@@ -97,6 +97,28 @@ void imgproc_fade( struct Image *input_img, struct Image *output_img );
 //   width and height of input_img are not the same.
 int imgproc_kaleidoscope( struct Image *input_img, struct Image *output_img );
 
-// TODO: add prototypes for your helper functions
+// Get the red value from pixel
+uint32_t get_r( uint32_t pixel );
+
+// Get the green value from pixel
+uint32_t get_g( uint32_t pixel );
+
+// Get the blue value from pixel
+uint32_t get_b( uint32_t pixel );
+
+// Get the alpha value from pixel
+uint32_t get_a( uint32_t pixel );
+
+// Make pixel from rgba components
+uint32_t make_pixel( uint32_t r, uint32_t g, uint32_t b, uint32_t a );
+
+// Convert pixel to grayscale
+uint32_t to_grayscale( uint32_t pixel );
+
+// Compute the gradient needed for pixel at index `x`
+int64_t gradient( int64_t x, int64_t max );
+
+// Compute the 1-dimensional index from column and row indices
+int32_t compute_index( struct Image *img, int32_t col, int32_t row );
 
 #endif // IMGPROC_H

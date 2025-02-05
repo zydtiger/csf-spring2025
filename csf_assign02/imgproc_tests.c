@@ -110,7 +110,16 @@ void test_rgb_basic( TestObjs *objs );
 void test_grayscale_basic( TestObjs *objs );
 void test_fade_basic( TestObjs *objs );
 void test_kaleidoscope_basic( TestObjs *objs );
-// TODO: add prototypes for additional test functions
+
+// Test helper functions
+void test_get_r( TestObjs *objs );
+void test_get_g( TestObjs *objs );
+void test_get_b( TestObjs *objs );
+void test_get_a( TestObjs *objs );
+void test_make_pixel( TestObjs *objs );
+void test_to_grayscale( TestObjs *objs );
+void test_gradient( TestObjs *objs );
+void test_compute_index( TestObjs *objs );
 
 int main( int argc, char **argv ) {
   // allow the specific test to execute to be specified as the
@@ -127,6 +136,15 @@ int main( int argc, char **argv ) {
   TEST( test_grayscale_basic );
   TEST( test_fade_basic );
   TEST( test_kaleidoscope_basic );
+  
+  TEST( test_get_r );
+  TEST( test_get_g );
+  TEST( test_get_b );
+  TEST( test_get_a );
+  TEST( test_make_pixel );
+  TEST( test_to_grayscale );
+  TEST( test_gradient );
+  TEST( test_compute_index );
 
   TEST_FINI();
 }
@@ -400,3 +418,35 @@ void test_kaleidoscope_basic( TestObjs *objs ) {
   destroy_img( sq_test_kaleidoscope_expected );
 }
 
+
+void test_get_r( TestObjs *objs ) {
+  // TODO: implement
+}
+
+void test_get_g( TestObjs *objs ) {
+  // TODO: implement
+}
+
+void test_get_b( TestObjs *objs ) {
+  // TODO: implement
+}
+
+void test_get_a( TestObjs *objs ) {
+  // TODO: implement
+}
+
+void test_make_pixel( TestObjs *objs ) {
+  // TODO: implement
+}
+
+void test_to_grayscale( TestObjs *objs ) {
+  // TODO: implement
+}
+
+void test_gradient( TestObjs *objs ) {
+  // TODO: implement
+}
+
+void test_compute_index( TestObjs *objs ) {
+  // TODO: implement
+}
