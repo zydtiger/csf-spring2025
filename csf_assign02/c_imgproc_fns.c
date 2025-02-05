@@ -45,7 +45,20 @@ void imgproc_grayscale( struct Image *input_img, struct Image *output_img ) {
 //                width and height twice the width/height of the
 //                input image)
 void imgproc_rgb( struct Image *input_img, struct Image *output_img ) {
-  // TODO: implement
+  for (int i=0;i<input_img->height;i++)
+    for (int j=0;j<input_img->width;j++) {
+      int input_index = i * input_img->width + j;
+      
+      int copy_index = i * output_img->width + j;
+      int red_index = i * output_img->width + input_img->width + j;
+      int green_index = (input_img->height + i) * output_img->width + j;
+      int blue_index = (input_img->height + i) * output_img->width + input_img->width + j;
+      
+      output_img->data[copy_index] = input_img->data[input_index];
+      output_img->data[red_index] = input_img->data[input_index]  & 0xFF0000FF;
+      output_img->data[green_index] = input_img->data[input_index]& 0x00FF00FF;
+      output_img->data[blue_index] = input_img->data[input_index] & 0x0000FFFF;
+    }
 }
 
 // Render a "faded" version of the input image.
