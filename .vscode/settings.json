@@ -3,7 +3,11 @@
     "*.css": "css",
     "*.html": "html",
     "*.desktop": "desktop",
-    "uint256.h": "c"
+    "uint256.h": "c",
+    "assert.h": "c",
+    "imgproc.h": "c",
+    "stdlib.h": "c",
+    "stdio.h": "c"
   },
   "editor.formatOnSave": false
 }

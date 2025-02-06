@@ -281,6 +281,44 @@ void destroy_img( struct Image *img ) {
   free( img );
 }
 
+void test_with_png( const char *input_name,
+                    const char *suffix,
+                    int32_t output_wscale,
+                    int32_t output_hscale,
+                    int(*imgproc)(struct Image*, struct Image*) ) {
+
+  struct Image *input = (struct Image *) malloc( sizeof( struct Image ) );
+  struct Image *output = (struct Image *) malloc( sizeof( struct Image ) );
+  struct Image *reference = (struct Image *) malloc( sizeof( struct Image ) );
+
+  ASSERT( input != NULL );
+  ASSERT( output != NULL );
+  ASSERT( reference != NULL );
+
+  input->data = NULL;
+  output->data = NULL;
+  reference->data = NULL;
+
+  char input_path[256];
+  char output_path[256];
+  char reference_path[256];
+  snprintf(input_path, sizeof(input_path), "./input/%s.png", input_name);
+  snprintf(output_path, sizeof(output_path), "./output/%s_%s.png", input_name, suffix);
+  snprintf(reference_path, sizeof(reference_path), "./expected/%s_%s.png", input_name, suffix);
+
+  ASSERT( IMG_SUCCESS == img_read( input_path, input ) );
+  ASSERT( IMG_SUCCESS == img_read( reference_path, reference ) );
+  ASSERT( IMG_SUCCESS == img_init(output, output_wscale * input->width, output_hscale * input->height) );
+  
+  ASSERT( imgproc(input, output) );
+  ASSERT( images_equal(output, reference) );
+  ASSERT( IMG_SUCCESS == img_write( output_path, output ) );
+
+  destroy_img(input);
+  destroy_img(output);
+  destroy_img(reference);
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Test functions
 ////////////////////////////////////////////////////////////////////////
@@ -429,44 +467,6 @@ void test_kaleidoscope_basic( TestObjs *objs ) {
   ASSERT( images_equal( sq_test_kaleidoscope_expected, objs->sq_test_out ) );
 
   destroy_img( sq_test_kaleidoscope_expected );
-}
-
-void test_with_png( const char *input_name,
-                    const char *suffix,
-                    int32_t output_wscale,
-                    int32_t output_hscale,
-                    int(*imgproc)(struct Image*, struct Image*) ) {
-
-  struct Image *input = (struct Image *) malloc( sizeof( struct Image ) );
-  struct Image *output = (struct Image *) malloc( sizeof( struct Image ) );
-  struct Image *reference = (struct Image *) malloc( sizeof( struct Image ) );
-
-  ASSERT( input != NULL );
-  ASSERT( output != NULL );
-  ASSERT( reference != NULL );
-
-  input->data = NULL;
-  output->data = NULL;
-  reference->data = NULL;
-
-  char input_path[256];
-  char output_path[256];
-  char reference_path[256];
-  snprintf(input_path, sizeof(input_path), "./input/%s.png", input_name);
-  snprintf(output_path, sizeof(output_path), "./output/%s_%s.png", input_name, suffix);
-  snprintf(reference_path, sizeof(reference_path), "./expected/%s_%s.png", input_name, suffix);
-
-  ASSERT( IMG_SUCCESS == img_read( input_path, input ) );
-  ASSERT( IMG_SUCCESS == img_read( reference_path, reference ) );
-  ASSERT( IMG_SUCCESS == img_init(output, output_wscale * input->width, output_hscale * input->height) );
-  
-  ASSERT( imgproc(input, output) );
-  ASSERT( images_equal(output, reference) );
-  ASSERT( IMG_SUCCESS == img_write( output_path, output ) );
-
-  destroy_img(input);
-  destroy_img(output);
-  destroy_img(reference);
 }
 
 int _imgproc_rgb(struct Image *input, struct Image *output) {
