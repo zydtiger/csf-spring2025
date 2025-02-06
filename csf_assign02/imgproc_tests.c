@@ -106,8 +106,8 @@ bool images_equal( struct Image *a, struct Image *b );
 void destroy_img( struct Image *img );
 void test_with_png( const char *input_name,
                     const char *suffix,
-                    int32_t output_wscale,
-                    int32_t output_hscale,
+                    float output_wscale,
+                    float output_hscale,
                     int(*imgproc)(struct Image*, struct Image*) );
 int exec_valgrind(const char *cmd);
 
@@ -286,8 +286,8 @@ void destroy_img( struct Image *img ) {
 
 void test_with_png( const char *input_name,
                     const char *suffix,
-                    int32_t output_wscale,
-                    int32_t output_hscale,
+                    float output_wscale,
+                    float output_hscale,
                     int(*imgproc)(struct Image*, struct Image*) ) {
 
   struct Image *input = (struct Image *) malloc( sizeof( struct Image ) );
@@ -311,7 +311,7 @@ void test_with_png( const char *input_name,
 
   ASSERT( IMG_SUCCESS == img_read( input_path, input ) );
   ASSERT( IMG_SUCCESS == img_read( reference_path, reference ) );
-  ASSERT( IMG_SUCCESS == img_init(output, output_wscale * input->width, output_hscale * input->height) );
+  ASSERT( IMG_SUCCESS == img_init( output, output_wscale * input->width, output_hscale * input->height) );
   
   ASSERT( imgproc(input, output) );
   ASSERT( images_equal(output, reference) );
