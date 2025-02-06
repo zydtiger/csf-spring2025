@@ -109,6 +109,7 @@ void test_with_png( const char *input_name,
                     int32_t output_wscale,
                     int32_t output_hscale,
                     int(*imgproc)(struct Image*, struct Image*) );
+int exec_valgrind(const char *cmd);
 
 // Test functions
 void test_rgb_basic( TestObjs *objs );
@@ -119,6 +120,7 @@ void test_rgb( TestObjs *objs );
 void test_grayscale( TestObjs *objs );
 void test_fade( TestObjs *objs );
 void test_kaleidoscope( TestObjs *objs );
+void test_memory_leak( TestObjs *objs );
 
 // Test helper functions
 void test_get_r( TestObjs *objs );
@@ -149,6 +151,7 @@ int main( int argc, char **argv ) {
   TEST( test_grayscale );
   TEST( test_fade );
   TEST( test_kaleidoscope );
+  TEST( test_memory_leak );
   
   TEST( test_get_r );
   TEST( test_get_g );
@@ -317,6 +320,15 @@ void test_with_png( const char *input_name,
   destroy_img(input);
   destroy_img(output);
   destroy_img(reference);
+}
+
+int exec_valgrind(const char *cmd) {
+  const char *valgrind_cmd = "valgrind --leak-check=full --show-leak-kinds=all";
+  char *final_cmd = malloc(strlen(valgrind_cmd) + strlen(cmd) + 2);
+  sprintf(final_cmd, "%s %s", valgrind_cmd, cmd);
+  int ret = WEXITSTATUS(system(final_cmd));
+  free(final_cmd);
+  return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -505,6 +517,18 @@ void test_fade( TestObjs *objs ) {
 void test_kaleidoscope( TestObjs *objs ) {
   test_with_png( "ingo",      "kaleidoscope", 0.5, 0.5, imgproc_kaleidoscope );
   test_with_png( "landscape", "kaleidoscope", 0.5, 0.5, imgproc_kaleidoscope );
+}
+
+void test_memory_leak( TestObjs *objs ) {
+  ASSERT( 0 == exec_valgrind("./c_imgproc rgb ./input/ingo.png ./output/ingo_rgb.png") );
+  ASSERT( 0 == exec_valgrind("./c_imgproc grayscale ./input/ingo.png ./output/ingo_grayscale.png") );
+  ASSERT( 0 == exec_valgrind("./c_imgproc fade ./input/ingo.png ./output/ingo_fade.png") );
+  ASSERT( 0 == exec_valgrind("./c_imgproc kaleidoscope ./input/ingo.png ./output/ingo_kaleidoscope.png") );
+  
+  ASSERT( 0 == exec_valgrind("./asm_imgproc rgb ./input/ingo.png ./output/ingo_rgb.png") );
+  ASSERT( 0 == exec_valgrind("./asm_imgproc grayscale ./input/ingo.png ./output/ingo_grayscale.png") );
+  ASSERT( 0 == exec_valgrind("./asm_imgproc fade ./input/ingo.png ./output/ingo_fade.png") );
+  ASSERT( 0 == exec_valgrind("./asm_imgproc kaleidoscope ./input/ingo.png ./output/ingo_kaleidoscope.png") );
 }
 
 void test_get_r( TestObjs *objs ) {
