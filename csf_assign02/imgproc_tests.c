@@ -420,33 +420,86 @@ void test_kaleidoscope_basic( TestObjs *objs ) {
 
 
 void test_get_r( TestObjs *objs ) {
-  // TODO: implement
+  uint32_t pixel_1 = 0x8B3D2A7D;
+  uint32_t pixel_2 = 0xC4E91F93;
+  uint32_t pixel_3 = 0x52A7B9BE;
+  uint32_t pixel_4 = 0x1E9D64A2;
+  uint32_t pixel_5 = 0x7F3BC845;
+
+  ASSERT( get_r(pixel_1) == 0x8B );
+  ASSERT( get_r(pixel_2) == 0xC4 );
+  ASSERT( get_r(pixel_3) == 0x52 );
+  ASSERT( get_r(pixel_4) == 0x1E );
+  ASSERT( get_r(pixel_5) == 0x7F );
 }
 
 void test_get_g( TestObjs *objs ) {
-  // TODO: implement
+  uint32_t pixel_1 = 0x8B3D2A7D;
+  uint32_t pixel_2 = 0xC4E91F93;
+  uint32_t pixel_3 = 0x52A7B9BE;
+  uint32_t pixel_4 = 0x1E9D64A2;
+  uint32_t pixel_5 = 0x7F3BC845;
+
+  ASSERT( get_g(pixel_1) == 0x3D );
+  ASSERT( get_g(pixel_2) == 0xE9 );
+  ASSERT( get_g(pixel_3) == 0xA7 );
+  ASSERT( get_g(pixel_4) == 0x9D );
+  ASSERT( get_g(pixel_5) == 0x3B );
 }
 
 void test_get_b( TestObjs *objs ) {
-  // TODO: implement
+  uint32_t pixel_1 = 0x8B3D2A7D;
+  uint32_t pixel_2 = 0xC4E91F93;
+  uint32_t pixel_3 = 0x52A7B9BE;
+  uint32_t pixel_4 = 0x1E9D64A2;
+  uint32_t pixel_5 = 0x7F3BC845;
+
+  ASSERT( get_b(pixel_1) == 0x2A );
+  ASSERT( get_b(pixel_2) == 0x1F );
+  ASSERT( get_b(pixel_3) == 0xB9 );
+  ASSERT( get_b(pixel_4) == 0x64 );
+  ASSERT( get_b(pixel_5) == 0xC8 );
 }
 
 void test_get_a( TestObjs *objs ) {
-  // TODO: implement
+  uint32_t pixel_1 = 0x8B3D2A7D;
+  uint32_t pixel_2 = 0xC4E91F93;
+  uint32_t pixel_3 = 0x52A7B9BE;
+  uint32_t pixel_4 = 0x1E9D64A2;
+  uint32_t pixel_5 = 0x7F3BC845;
+
+  ASSERT( get_a(pixel_1) == 0x7D );
+  ASSERT( get_a(pixel_2) == 0x93 );
+  ASSERT( get_a(pixel_3) == 0xBE );
+  ASSERT( get_a(pixel_4) == 0xA2 );
+  ASSERT( get_a(pixel_5) == 0x45 );
 }
 
 void test_make_pixel( TestObjs *objs ) {
-  // TODO: implement
+  uint32_t pixel = make_pixel(0x8B, 0x3D, 0x2A, 0x7D);
+  ASSERT( pixel == 0x8B3D2A7D );
 }
 
 void test_to_grayscale( TestObjs *objs ) {
-  // TODO: implement
+  uint32_t pixel = make_pixel(0x8B, 0x3D, 0x2A, 0x7D);
+  ASSERT( to_grayscale(pixel) == 0x5151517D );
 }
 
 void test_gradient( TestObjs *objs ) {
   // TODO: implement
+  ASSERT(false);
 }
 
 void test_compute_index( TestObjs *objs ) {
-  // TODO: implement
+  struct Image img = { 100, 100, NULL };
+  ASSERT( compute_index(&img, 5, 5) == 505 );
+
+  img = (struct Image){ 13, 100, NULL };
+  ASSERT( compute_index(&img, 10, 10) == 140 );
+
+  img = (struct Image){ 10, 17, NULL };
+  ASSERT( compute_index(&img, 0, 0) == 0 );
+
+  img = (struct Image){ 12304, 1203, NULL };
+  ASSERT( compute_index(&img, 12303, 1202) == 14801711 );
 }
