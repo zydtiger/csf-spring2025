@@ -104,12 +104,21 @@ struct Image *picture_to_img( const struct Picture *pic );
 uint32_t lookup_color(char c, const struct ExpectedColor *colors);
 bool images_equal( struct Image *a, struct Image *b );
 void destroy_img( struct Image *img );
+void test_with_png( const char *input_name,
+                    const char *suffix,
+                    int32_t output_wscale,
+                    int32_t output_hscale,
+                    int(*imgproc)(struct Image*, struct Image*) );
 
 // Test functions
 void test_rgb_basic( TestObjs *objs );
 void test_grayscale_basic( TestObjs *objs );
 void test_fade_basic( TestObjs *objs );
 void test_kaleidoscope_basic( TestObjs *objs );
+void test_rgb( TestObjs *objs );
+void test_grayscale( TestObjs *objs );
+void test_fade( TestObjs *objs );
+void test_kaleidoscope( TestObjs *objs );
 
 // Test helper functions
 void test_get_r( TestObjs *objs );
@@ -136,6 +145,10 @@ int main( int argc, char **argv ) {
   TEST( test_grayscale_basic );
   TEST( test_fade_basic );
   TEST( test_kaleidoscope_basic );
+  TEST( test_rgb );
+  TEST( test_grayscale );
+  TEST( test_fade );
+  TEST( test_kaleidoscope );
   
   TEST( test_get_r );
   TEST( test_get_g );
@@ -418,6 +431,81 @@ void test_kaleidoscope_basic( TestObjs *objs ) {
   destroy_img( sq_test_kaleidoscope_expected );
 }
 
+void test_with_png( const char *input_name,
+                    const char *suffix,
+                    int32_t output_wscale,
+                    int32_t output_hscale,
+                    int(*imgproc)(struct Image*, struct Image*) ) {
+
+  struct Image *input = (struct Image *) malloc( sizeof( struct Image ) );
+  struct Image *output = (struct Image *) malloc( sizeof( struct Image ) );
+  struct Image *reference = (struct Image *) malloc( sizeof( struct Image ) );
+
+  ASSERT( input != NULL );
+  ASSERT( output != NULL );
+  ASSERT( reference != NULL );
+
+  input->data = NULL;
+  output->data = NULL;
+  reference->data = NULL;
+
+  char input_path[256];
+  char output_path[256];
+  char reference_path[256];
+  snprintf(input_path, sizeof(input_path), "./input/%s.png", input_name);
+  snprintf(output_path, sizeof(output_path), "./output/%s_%s.png", input_name, suffix);
+  snprintf(reference_path, sizeof(reference_path), "./expected/%s_%s.png", input_name, suffix);
+
+  ASSERT( IMG_SUCCESS == img_read( input_path, input ) );
+  ASSERT( IMG_SUCCESS == img_read( reference_path, reference ) );
+  ASSERT( IMG_SUCCESS == img_init(output, output_wscale * input->width, output_hscale * input->height) );
+  
+  ASSERT( imgproc(input, output) );
+  ASSERT( images_equal(output, reference) );
+  ASSERT( IMG_SUCCESS == img_write( output_path, output ) );
+
+  destroy_img(input);
+  destroy_img(output);
+  destroy_img(reference);
+}
+
+int _imgproc_rgb(struct Image *input, struct Image *output) {
+  imgproc_rgb(input, output);
+  return 1;
+}
+
+void test_rgb( TestObjs *objs ) {
+  test_with_png( "ingo",      "rgb", 2, 2, _imgproc_rgb );
+  test_with_png( "kittens",   "rgb", 2, 2, _imgproc_rgb );
+  test_with_png( "landscape", "rgb", 2, 2, _imgproc_rgb );
+}
+
+int _imgproc_grayscale(struct Image *input, struct Image *output) {
+  imgproc_grayscale(input, output);
+  return 1;
+}
+
+void test_grayscale( TestObjs *objs ) {
+  test_with_png( "ingo",      "grayscale", 1, 1, _imgproc_grayscale);
+  test_with_png( "kittens",   "grayscale", 1, 1, _imgproc_grayscale );
+  test_with_png( "landscape", "grayscale", 1, 1, _imgproc_grayscale );
+}
+
+int _imgproc_fade(struct Image *input, struct Image *output) {
+  imgproc_fade(input, output);
+  return 1;
+}
+
+void test_fade( TestObjs *objs ) {
+  test_with_png( "ingo",      "fade", 1, 1, _imgproc_fade );
+  test_with_png( "kittens",   "fade", 1, 1, _imgproc_fade );
+  test_with_png( "landscape", "fade", 1, 1, _imgproc_fade );
+}
+
+void test_kaleidoscope( TestObjs *objs ) {
+  test_with_png( "ingo",      "kaleidoscope", 0.5, 0.5, imgproc_kaleidoscope );
+  test_with_png( "landscape", "kaleidoscope", 0.5, 0.5, imgproc_kaleidoscope );
+}
 
 void test_get_r( TestObjs *objs ) {
   uint32_t pixel_1 = 0x8B3D2A7D;
