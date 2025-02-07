@@ -10,9 +10,7 @@
 #define IMAGE_DATA_OFFSET    8
 
 /*
- * TODO: define your helper functions here.
- * Don't forget to use the .globl directive to make
- * them visible to the test code.
+ * Helper functions.
  */
 
 /*
@@ -161,11 +159,11 @@ gradient:
  */
   .global compute_index
 compute_index:
-  mov IMAGE_WIDTH_OFFSET(%rdi), %r10  # Store image width in temporary register
-  mov $0, %rax                        # Init return register to 0
-  add %rdx, %rax                      # Add row index to return register
-  imul %r10, %rax                     # Multiply row index with image width
-  add %rsi, %rax                      # Add column index to return register
+  movq IMAGE_WIDTH_OFFSET(%rdi), %r10  # Store image width in temporary register
+  movq $0, %rax                        # Init return register to 0
+  addq %rdx, %rax                      # Add row index to return register
+  imulq %r10, %rax                     # Multiply row index with image width
+  addq %rsi, %rax                      # Add column index to return register
   ret
 
 /*
