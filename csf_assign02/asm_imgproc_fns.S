@@ -16,6 +16,159 @@
  */
 
 /*
+ * Get the red value from pixel (bits 31-24).
+ * 
+ * Parameters:
+ *   %edi - input pixel (32 bits)
+ */
+  .global get_r
+get_r:
+  movl %edi, %eax         # Move input pixel to return register
+  andl $0xFF000000, %eax  # Extract the red value in-place
+  shrl $24, %eax          # Shift right 24 bits to remove trailing 0s
+  ret
+
+/*
+ * Get the green value from pixel (bits 23-16).
+ * 
+ * Parameters:
+ *   %edi - input pixel (32 bits)
+ */
+  .global get_g
+get_g:
+  movl %edi, %eax         # Move input pixel to return register
+  andl $0x00FF0000, %eax  # Extract the green value in-place
+  shrl $16, %eax          # Shift right 16 bits to remove trailing 0s
+  ret
+
+/*
+ * Get the blue value from pixel (bits 15-8).
+ * 
+ * Parameters:
+ *   %edi - input pixel (32 bits)
+ */
+  .global get_b
+get_b:
+  movl %edi, %eax         # Move input pixel to return register
+  andl $0x0000FF00, %eax  # Extract the blue value in-place
+  shrl $8, %eax           # Shift right 8 bits to remove trailing 0s
+  ret
+
+/*
+ * Get the alpha value from pixel (bits 7-0).
+ * 
+ * Parameters:
+ *   %edi - input pixel (32 bits)
+ */
+  .global get_a
+get_a:
+  movl %edi, %eax         # Move input pixel to return register
+  andl $0x000000FF, %eax  # Extract the alpha value in-place
+  ret
+
+/*
+ * Make pixel from rgba components.
+ * 
+ * Parameters:
+ *   %edi - red value
+ *   %esi - green value
+ *   %edx - blue value
+ *   %ecx - alpha value
+ */
+  .global make_pixel
+make_pixel:
+  movl %edi, %eax   # Move red value to return register
+  shll $8, %eax     # Shift left 8 bits to make space for green value
+  orl %esi, %eax    # Add green value to return register
+  shll $8, %eax     # Shift left 8 bits again to make space for blue value
+  orl %edx, %eax    # Add blue value to return register
+  shll $8, %eax     # Shift left 8 bits again to make space for alpha value
+  orl %ecx, %eax    # Add alpha value to return register
+  ret
+
+/*
+ * Convert pixel to grayscale.
+ * 
+ * Parameters:
+ *   %edi - input pixel
+ */
+  .global to_grayscale
+to_grayscale:
+  pushq %r12        # Preserve r12-15 callee-save registers on stack
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  
+  movl %edi, %r15d  # Save original pixel
+
+  call get_r        # Call get_r on input pixel
+  movl %eax, %r12d  # Store return value in r12
+
+  movl %r15d, %edi  # Restore input pixel from save
+  call get_g        # Call get_g on input pixel
+  movl %eax, %r13d  # Store return value in r13
+
+  movl %r15d, %edi  # Restore input pixel from save
+  call get_b        # Call get_b on input pixel
+  movl %eax, %r14d  # Store return value in r14
+
+  movl %r15d, %edi  # Restore input pixel from save 
+  call get_a        # Call get_a on input pixel
+  movl %eax, %r15d  # Store return value in r15 (override input pixel save)
+
+  imull $49, %r12d  # Multiply red value by 49
+  imull $128, %r13d # Multiply green value by 128
+  imull $79, %r14d  # Multiply blue value by 79
+
+  movl $0, %r10d    # Init r10 to 0
+  addl %r12d, %r10d # Make rgb weighted sum
+  addl %r13d, %r10d
+  addl %r14d, %r10d
+  shrl $8, %r10d    # Shift right 8 bits (divide by 256)
+
+  movl %r10d, %edi  # Put grayscale rgb values in first three params
+  movl %r10d, %esi
+  movl %r10d, %edx
+  movl %r15d, %ecx  # Put original alpha value
+  call make_pixel   # Make return pixel
+
+  popq %r12         # Restore r12-15 callee-save registers
+  popq %r13
+  popq %r14
+  popq %r15
+
+  ret
+
+/*
+ * Compute the gradient needed for pixel at index.
+ * 
+ * Parameters:
+ *   %rdi - index to calculate
+ *   %rsi - max index
+ */
+  .global gradient
+gradient:
+  /* TODO: implement */
+  ret
+
+/*
+ * Compute the 1-dimensional index from column and row indices.
+ * 
+ * Parameters:
+ *   %rdi - pointer to the input Image
+ *   %rsi - column index
+ *   %rdx - row index
+ */
+  .global compute_index
+compute_index:
+  mov IMAGE_WIDTH_OFFSET(%rdi), %r10  # Store image width in temporary register
+  mov $0, %rax                        # Init return register to 0
+  add %rdx, %rax                      # Add row index to return register
+  imul %r10, %rax                     # Multiply row index with image width
+  add %rsi, %rax                      # Add column index to return register
+  ret
+
+/*
  * Implementations of API functions
  */
 
