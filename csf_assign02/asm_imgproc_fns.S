@@ -114,9 +114,9 @@ to_grayscale:
   call get_a        # Call get_a on input pixel
   movl %eax, %r15d  # Store return value in r15 (override input pixel save)
 
-  imull $49, %r12d  # Multiply red value by 49
+  imull $79, %r12d  # Multiply red value by 79
   imull $128, %r13d # Multiply green value by 128
-  imull $79, %r14d  # Multiply blue value by 79
+  imull $49, %r14d  # Multiply blue value by 49
 
   movl $0, %r10d    # Init r10 to 0
   addl %r12d, %r10d # Make rgb weighted sum
