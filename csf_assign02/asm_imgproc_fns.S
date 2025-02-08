@@ -130,10 +130,10 @@ to_grayscale:
   movl %r15d, %ecx  # Put original alpha value
   call make_pixel   # Make return pixel
 
-  popq %r12         # Restore r12-15 callee-save registers
-  popq %r13
+  popq %r15         # Restore r12-15 callee-save registers
   popq %r14
-  popq %r15
+  popq %r13
+  popq %r12
 
   ret
 
@@ -154,16 +154,16 @@ gradient:
  * 
  * Parameters:
  *   %rdi - pointer to the input Image
- *   %rsi - column index
- *   %rdx - row index
+ *   %esi - column index
+ *   %edx - row index
  */
   .global compute_index
 compute_index:
-  movq IMAGE_WIDTH_OFFSET(%rdi), %r10  # Store image width in temporary register
-  movq $0, %rax                        # Init return register to 0
-  addq %rdx, %rax                      # Add row index to return register
-  imulq %r10, %rax                     # Multiply row index with image width
-  addq %rsi, %rax                      # Add column index to return register
+  movl IMAGE_WIDTH_OFFSET(%rdi), %r10d  # Store image width in temporary register
+  movl $0, %eax                         # Init return register to 0
+  addl %edx, %eax                       # Add row index to return register
+  imull %r10d, %eax                     # Multiply row index with image width
+  addl %esi, %eax                       # Add column index to return register
   ret
 
 /*
