@@ -314,8 +314,8 @@ void test_with_png( const char *input_name,
   ASSERT( IMG_SUCCESS == img_init( output, output_wscale * input->width, output_hscale * input->height) );
   
   ASSERT( imgproc(input, output) );
-  ASSERT( images_equal(output, reference) );
   ASSERT( IMG_SUCCESS == img_write( output_path, output ) );
+  ASSERT( images_equal(output, reference) );
 
   destroy_img(input);
   destroy_img(output);
