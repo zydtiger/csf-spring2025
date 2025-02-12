@@ -193,35 +193,29 @@ int imgproc_kaleidoscope( struct Image *input_img, struct Image *output_img ) {
   if (width != height){
     return 0;
   }
-
+  int32_t padded_width = width;
   if (width % 2 == 1){
-    width += 1;
-    height += 1;
+    padded_width += 1;
   }
-  int32_t half = (width) /2;
+  int32_t half = width /2;
 
   for (int32_t i = 0; i < half; i++){
     for (int32_t j = i; j < half; j++){
-  
       int32_t idx_in = compute_index(input_img, j, i);
-      uint32_t val = input_img->data[idx_in];
-
       int32_t idx_out = compute_index(output_img, j, i);
-      output_img->data[idx_out] = val;
+      output_img->data[idx_out] = input_img->data[idx_in];
+      int32_t sym_idx = compute_index(output_img,i , j);
+      output_img->data[sym_idx] = input_img->data[idx_in];
       
-      if (i != j){
-        int32_t sym_idx = compute_index(output_img,i , j);
-        output_img->data[sym_idx] = val;
-      }
     }
   }
-  
+
+
   for (int32_t i = 0; i < half; i++){
     for (int32_t j = 0; j < half; j++){
       int32_t index_old = compute_index(output_img, j, i);
-      uint32_t val = output_img->data[index_old];
       int32_t index_new = compute_index(output_img, (width-1-j), i);
-      output_img->data[index_new] = val;
+      output_img->data[index_new] = output_img->data[index_old];
     }
   }
 
@@ -229,9 +223,7 @@ int imgproc_kaleidoscope( struct Image *input_img, struct Image *output_img ) {
     for (int32_t j = 0; j < width; j++) {
       int32_t idxTop    = compute_index(output_img, j, i);
       int32_t idxBottom = compute_index(output_img, j, (height - 1 - i));
-      uint32_t val = output_img->data[idxTop];
-
-      output_img->data[idxBottom] = val;
+      output_img->data[idxBottom] = output_img->data[idxTop];
     }
   }
   return 1;
