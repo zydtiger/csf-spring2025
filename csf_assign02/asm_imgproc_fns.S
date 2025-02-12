@@ -19,7 +19,7 @@
  * Parameters:
  *   %edi - input pixel (32 bits)
  */
-  .global get_r
+  .globl get_r
 get_r:
   movl %edi, %eax         # Move input pixel to return register
   andl $0xFF000000, %eax  # Extract the red value in-place
@@ -32,7 +32,7 @@ get_r:
  * Parameters:
  *   %edi - input pixel (32 bits)
  */
-  .global get_g
+  .globl get_g
 get_g:
   movl %edi, %eax         # Move input pixel to return register
   andl $0x00FF0000, %eax  # Extract the green value in-place
@@ -45,7 +45,7 @@ get_g:
  * Parameters:
  *   %edi - input pixel (32 bits)
  */
-  .global get_b
+  .globl get_b
 get_b:
   movl %edi, %eax         # Move input pixel to return register
   andl $0x0000FF00, %eax  # Extract the blue value in-place
@@ -58,7 +58,7 @@ get_b:
  * Parameters:
  *   %edi - input pixel (32 bits)
  */
-  .global get_a
+  .globl get_a
 get_a:
   movl %edi, %eax         # Move input pixel to return register
   andl $0x000000FF, %eax  # Extract the alpha value in-place
@@ -73,7 +73,7 @@ get_a:
  *   %edx - blue value
  *   %ecx - alpha value
  */
-  .global make_pixel
+  .globl make_pixel
 make_pixel:
   movl %edi, %eax   # Move red value to return register
   shll $8, %eax     # Shift left 8 bits to make space for green value
@@ -90,7 +90,7 @@ make_pixel:
  * Parameters:
  *   %edi - input pixel
  */
-  .global to_grayscale
+  .globl to_grayscale
 to_grayscale:
   pushq %r12        # Preserve r12-15 callee-save registers on stack
   pushq %r13
@@ -130,10 +130,10 @@ to_grayscale:
   movl %r15d, %ecx  # Put original alpha value
   call make_pixel   # Make return pixel
 
-  popq %r12         # Restore r12-15 callee-save registers
-  popq %r13
+  popq %r15         # Restore r12-15 callee-save registers
   popq %r14
-  popq %r15
+  popq %r13
+  popq %r12
 
   ret
 
@@ -144,7 +144,7 @@ to_grayscale:
  *   %rdi - index to calculate
  *   %rsi - max index
  */
-  .global gradient
+  .globl gradient
 gradient:
   /* TODO: implement */
   ret
@@ -154,16 +154,16 @@ gradient:
  * 
  * Parameters:
  *   %rdi - pointer to the input Image
- *   %rsi - column index
- *   %rdx - row index
+ *   %esi - column index
+ *   %edx - row index
  */
-  .global compute_index
+  .globl compute_index
 compute_index:
-  movq IMAGE_WIDTH_OFFSET(%rdi), %r10  # Store image width in temporary register
-  movq $0, %rax                        # Init return register to 0
-  addq %rdx, %rax                      # Add row index to return register
-  imulq %r10, %rax                     # Multiply row index with image width
-  addq %rsi, %rax                      # Add column index to return register
+  movl IMAGE_WIDTH_OFFSET(%rdi), %r10d  # Store image width in temporary register
+  movq $0, %rax                         # Init return register to 0
+  addl %edx, %eax                       # Add row index to return register
+  imull %r10d, %eax                     # Multiply row index with image width
+  addl %esi, %eax                       # Add column index to return register
   ret
 
 /*
@@ -201,7 +201,131 @@ compute_index:
  */
 	.globl imgproc_rgb
 imgproc_rgb:
-	/* TODO: implement */
+  pushq %rbx                            # Used for row indexing
+  pushq %rbp                            # Used for col indexing
+  pushq %r12                            # Used to store original image pointer
+  pushq %r13                            # Used to store output image pointer
+  pushq %r14                            # Used to store original pixel value
+  pushq %r15                            # Used to store alpha value and new pixel value
+
+  movq %rdi, %r12                       # Store input image pointer
+  movq %rsi, %r13                       # Store output image pointer
+
+  movq $0, %rbx                         # Init row counter to 0
+  jmp .row_cond_rgb                     # Jump to row condition
+
+.row_loop_rgb:                          # Row loop body
+  movq $0, %rbp                         # Init column counter to 0
+  jmp .col_cond_rgb                     # Jump to col condition
+
+.col_loop_rgb:                          # Col loop body
+  movq %r12, %rdi                       # Load original image pointer into first param
+  movl %ebp, %esi                       # Load col counter to second param
+  movl %ebx, %edx                       # Load row counter to third param
+  call compute_index                    # Compute index in 1D, offset in 32 bits
+
+  movq IMAGE_DATA_OFFSET(%r12), %r10    # Load original data array start address to r10
+  movl (%r10,%rax,4), %r14d             # Load pixel value to r14 register
+  
+  # ----- COPY PIXEL -----
+  movq %r13, %rdi                       # Load output image pointer into first param
+  movl %ebp, %esi                       # Load col counter to second param
+  movl %ebx, %edx                       # Load row counter to third param
+  call compute_index                    # Compute index in 1D, offset in 32 bits
+
+  movq IMAGE_DATA_OFFSET(%r13), %r10    # Load output data array start address to r10
+  movl %r14d, (%r10,%rax,4)             # Load pixel to output array (copy)
+  
+  # ----- RED PIXEL -----
+  movl %r14d, %edi                      # Load pixel value into get_a param
+  call get_a                            # Get alpha value of pixel
+  movl %eax, %r15d                      # Store alpha value in r15 register for later use
+
+  movl %r14d, %edi                      # Load pixel value into get_r param
+  call get_r                            # Get red value of pixel
+
+  movl %eax, %edi                       # Create red version of original pixel
+  movl $0, %esi                         # green = 0
+  movl $0, %edx                         # blue = 0
+  movl %r15d, %ecx                      # alpha = original
+  call make_pixel                       # Make red version pixel
+  pushq %r15                            # Save alpha value
+  movl %eax, %r15d                      # Load new pixel into r15 register
+  
+  movq %r13, %rdi                       # Load output image pointer into first param
+  movl %ebp, %esi                       # Load col counter into second param
+  addl IMAGE_WIDTH_OFFSET(%r12), %esi   # Increment col counter by original image width
+  movl %ebx, %edx                       # Load row counter into third param
+  call compute_index                    # Compute index for red pixel
+
+  movq IMAGE_DATA_OFFSET(%r13), %r10    # Load output data array start address to r10
+  movl %r15d, (%r10,%rax,4)             # Load pixel to output array (red)
+
+  # ----- GREEN PIXEL -----
+  movl %r14d, %edi                      # Load pixel value into get_g param
+  call get_g                            # Get green value of pixel
+
+  popq %r15                             # Restore alpha value
+  movl $0, %edi                         # red = 0
+  movl %eax, %esi                       # Create green version of original pixel
+  movl $0, %edx                         # blue = 0
+  movl %r15d, %ecx                      # alpha = original
+  call make_pixel                       # Make green version pixel
+  pushq %r15                            # Save alpha value
+  movl %eax, %r15d                      # Load new pixel into r15 register
+  
+  movq %r13, %rdi                       # Load output image pointer into first param
+  movl %ebp, %esi                       # Load col counter into second param
+  movl %ebx, %edx                       # Load row counter into third param
+  addl IMAGE_HEIGHT_OFFSET(%r12), %edx  # Increment row counter by original image height
+  call compute_index                    # Compute index for green pixel
+
+  movq IMAGE_DATA_OFFSET(%r13), %r10    # Load output data array start address to r10
+  movl %r15d, (%r10,%rax,4)             # Load pixel to output array (green)
+
+  # ----- BLUE PIXEL -----
+  movl %r14d, %edi                      # Load pixel value into get_b param
+  call get_b                            # Get blue value of pixel
+
+  popq %r15                             # Restore alpha value
+  movl $0, %edi                         # red = 0
+  movl $0, %esi                         # green = 0
+  movl %eax, %edx                       # Create blue version of original pixel
+  movl %r15d, %ecx                      # alpha = original
+  call make_pixel                       # Make blue version pixel
+  movl %eax, %r15d                      # Load new pixel into r15 register
+  
+  movq %r13, %rdi                       # Load output image pointer into first param
+  movl %ebp, %esi                       # Load col counter into second param
+  addl IMAGE_WIDTH_OFFSET(%r12), %esi   # Increment col counter by original image width
+  movl %ebx, %edx                       # Load row counter into third param
+  addl IMAGE_HEIGHT_OFFSET(%r12), %edx  # Increment row counter by original image height
+  call compute_index                    # Compute index for blue pixel
+
+  movq IMAGE_DATA_OFFSET(%r13), %r10    # Load output data array start address to r10
+  movl %r15d, (%r10,%rax,4)             # Load pixel to output array (blue)
+
+  incl %ebp                             # Increment col by 1
+
+.col_cond_rgb:
+  movl IMAGE_WIDTH_OFFSET(%r12), %eax   # Load width temporarily
+  cmpl %eax, %ebp                       # Compare col with width
+  jl .col_loop_rgb                      # Go to col loop if current col is less than width
+
+  incl %ebx                             # Increment row by 1
+
+.row_cond_rgb:
+  movl IMAGE_HEIGHT_OFFSET(%r12), %eax  # Load height temporarily
+  cmpl %eax, %ebx                       # Compare row with height
+  jl .row_loop_rgb                      # Go to row loop if current row is less than height
+
+  popq %r15                             # Restore callee-save registers
+  popq %r14
+  popq %r13
+  popq %r12
+  popq %rbp
+  popq %rbx
+  
 	ret
 
 /*
@@ -216,7 +340,57 @@ imgproc_rgb:
  */
 	.globl imgproc_grayscale
 imgproc_grayscale:
-	/* TODO: implement */
+	pushq %rbx                            # Used for row indexing
+  pushq %rbp                            # Used for col indexing
+  pushq %r12                            # Used to store original image pointer
+  pushq %r13                            # Used to store output image pointer
+  pushq %r14                            # Used to store computed index (as it is same for both images)
+
+  movq %rdi, %r12                       # Store input image pointer
+  movq %rsi, %r13                       # Store output image pointer
+
+  movq $0, %rbx                         # Init row counter to 0
+  jmp .row_cond_grayscale               # Jump to row condition
+
+.row_loop_grayscale:                    # Row loop body
+  movq $0, %rbp                         # Init column counter to 0
+  jmp .col_cond_grayscale               # Jump to col condition
+
+.col_loop_grayscale:                    # Col loop body
+  movq %r12, %rdi                       # Load original image pointer into first param
+  movl %ebp, %esi                       # Load col counter to second param
+  movl %ebx, %edx                       # Load row counter to third param
+  call compute_index                    # Compute index in 1D, offset in 32 bits
+  movq $0, %r14                         # Clear r14 register
+  movl %eax, %r14d                      # Move resulting offset to r14 register
+
+  movq IMAGE_DATA_OFFSET(%r12), %r10    # Load original data array start address to r10
+  movl (%r10,%r14,4), %edi              # Load pixel value into first param
+  call to_grayscale                     # Calculate grayscale pixel
+
+  movq IMAGE_DATA_OFFSET(%r13), %r10    # Load output data array start address to r10
+  movl %eax, (%r10,%r14,4)              # Load grayscale pixel to output array
+
+  incl %ebp                             # Increment col by 1
+
+.col_cond_grayscale:
+  movl IMAGE_WIDTH_OFFSET(%r12), %eax   # Load width temporarily
+  cmpl %eax, %ebp                       # Compare col with width
+  jl .col_loop_grayscale                # Go to col loop if current col is less than width
+
+  incl %ebx                             # Increment row by 1
+
+.row_cond_grayscale:
+  movl IMAGE_HEIGHT_OFFSET(%r12), %eax  # Load height temporarily
+  cmpl %eax, %ebx                       # Compare row with height
+  jl .row_loop_grayscale                # Go to row loop if current row is less than height
+
+  popq %r14                             # Restore callee-save registers
+  popq %r13
+  popq %r12
+  popq %rbp
+  popq %rbx
+  
 	ret
 
 /*
