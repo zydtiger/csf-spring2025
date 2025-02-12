@@ -190,41 +190,47 @@ void imgproc_fade( struct Image *input_img, struct Image *output_img ) {
 int imgproc_kaleidoscope( struct Image *input_img, struct Image *output_img ) {
   int32_t width = input_img->width;
   int32_t height = input_img->height;
-  if (width != height){
-    return 0;
-  }
-  int32_t padded_width = width;
-  if (width % 2 == 1){
-    padded_width += 1;
-  }
-  int32_t half = width /2;
+  if (width != height) return 0;
 
+  int32_t half = (width >> 1);
+
+  // top left  
   for (int32_t i = 0; i < half; i++){
     for (int32_t j = i; j < half; j++){
-      int32_t idx_in = compute_index(input_img, j, i);
-      int32_t idx_out = compute_index(output_img, j, i);
-      output_img->data[idx_out] = input_img->data[idx_in];
-      int32_t sym_idx = compute_index(output_img,i , j);
-      output_img->data[sym_idx] = input_img->data[idx_in];
-      
+      int32_t idx_original  = compute_index(input_img, j, i);
+      int32_t idx_copy      = compute_index(output_img, j, i);
+      int32_t idx_reflect   = compute_index(output_img, i, j);
+      output_img->data[idx_copy]    = input_img->data[idx_original];
+      output_img->data[idx_reflect] = input_img->data[idx_original]; 
     }
   }
 
-
+  // top right
   for (int32_t i = 0; i < half; i++){
     for (int32_t j = 0; j < half; j++){
-      int32_t index_old = compute_index(output_img, j, i);
-      int32_t index_new = compute_index(output_img, (width-1-j), i);
-      output_img->data[index_new] = output_img->data[index_old];
+      int32_t idx_original = compute_index(output_img, j, i);
+      int32_t idx_right    = compute_index(output_img, (width - 1 - j), i);
+      output_img->data[idx_right] = output_img->data[idx_original];
     }
   }
 
+  // bottom left
   for (int32_t i = 0; i < half; i++) {
-    for (int32_t j = 0; j < width; j++) {
-      int32_t idxTop    = compute_index(output_img, j, i);
-      int32_t idxBottom = compute_index(output_img, j, (height - 1 - i));
-      output_img->data[idxBottom] = output_img->data[idxTop];
+    for (int32_t j = 0; j < half; j++) {
+      int32_t idx_original  = compute_index(output_img, j, i);
+      int32_t idx_bottom    = compute_index(output_img, j, (height - 1 - i));
+      output_img->data[idx_bottom] = output_img->data[idx_original];
     }
   }
+
+  // bottom right
+  for (int32_t i = 0; i < half; i++) {
+    for (int32_t j = 0; j < half; j++) {
+      int32_t idx_original      = compute_index(output_img, j, i);
+      int32_t idx_bottom_right  = compute_index(output_img, (width - 1 - j), (height - 1 - i));
+      output_img->data[idx_bottom_right] = output_img->data[idx_original];
+    }
+  }
+
   return 1;
 }
