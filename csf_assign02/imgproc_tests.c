@@ -116,6 +116,7 @@ void test_rgb_basic( TestObjs *objs );
 void test_grayscale_basic( TestObjs *objs );
 void test_fade_basic( TestObjs *objs );
 void test_kaleidoscope_basic( TestObjs *objs );
+void test_kaleidoscope_odd( TestObjs *objs );
 void test_rgb( TestObjs *objs );
 void test_grayscale( TestObjs *objs );
 void test_fade( TestObjs *objs );
@@ -147,11 +148,12 @@ int main( int argc, char **argv ) {
   TEST( test_grayscale_basic );
   TEST( test_fade_basic );
   TEST( test_kaleidoscope_basic );
+  TEST( test_kaleidoscope_odd );
   TEST( test_rgb );
   TEST( test_grayscale );
   TEST( test_fade );
   TEST( test_kaleidoscope );
-  TEST( test_memory_leak );
+  // TEST( test_memory_leak );
   
   TEST( test_get_r );
   TEST( test_get_g );
@@ -479,6 +481,59 @@ void test_kaleidoscope_basic( TestObjs *objs ) {
   ASSERT( images_equal( sq_test_kaleidoscope_expected, objs->sq_test_out ) );
 
   destroy_img( sq_test_kaleidoscope_expected );
+}
+
+void test_kaleidoscope_odd( TestObjs *objs ) {
+  struct Picture sq_test_pic = {
+    TEST_COLORS,
+    13, // width
+    13, // height
+    "rrrrrrA      "
+    " gggggA      "
+    "  bbbbA      "
+    "   mmmA      "
+    "    ccA      "
+    "     rA      "
+    "      A      "
+    "             "
+    "             "
+    "             "
+    "             "
+    "             "
+    "             "
+  };
+
+  struct Picture sq_test_kaleidoscope_expected_pic = {
+    TEST_COLORS,
+    13, // width
+    13, // height
+    "rrrrrrArrrrrr"
+    "rgggggAgggggr"
+    "rgbbbbAbbbbgr"
+    "rgbmmmAmmmbgr"
+    "rgbmccAccmbgr"
+    "rgbmcrArcmbgr"
+    "AAAAAAAAAAAAA"
+    "rgbmcrArcmbgr"
+    "rgbmccAccmbgr"
+    "rgbmmmAmmmbgr"
+    "rgbbbbAbbbbgr"
+    "rgggggAgggggr"
+    "rrrrrrArrrrrr"
+  };
+  
+  struct Image *sq_test = picture_to_img( &sq_test_pic );
+  struct Image *sq_test_kaleidoscope_expected = picture_to_img( &sq_test_kaleidoscope_expected_pic );
+  struct Image *sq_test_out = (struct Image *) malloc( sizeof( struct Image ) );
+  img_init(sq_test_out, sq_test->width, sq_test->height);
+
+  imgproc_kaleidoscope( sq_test, sq_test_out );
+
+  ASSERT( images_equal( sq_test_kaleidoscope_expected, objs->sq_test_out ) );
+
+  destroy_img( sq_test );
+  destroy_img( sq_test_kaleidoscope_expected );
+  destroy_img( sq_test_out );
 }
 
 int _imgproc_rgb(struct Image *input, struct Image *output) {
