@@ -106,8 +106,8 @@ bool images_equal( struct Image *a, struct Image *b );
 void destroy_img( struct Image *img );
 void test_with_png( const char *input_name,
                     const char *suffix,
-                    float output_wscale,
-                    float output_hscale,
+                    int output_wscale,
+                    int output_hscale,
                     int(*imgproc)(struct Image*, struct Image*) );
 int exec_valgrind(const char *cmd);
 
@@ -286,8 +286,8 @@ void destroy_img( struct Image *img ) {
 
 void test_with_png( const char *input_name,
                     const char *suffix,
-                    float output_wscale,
-                    float output_hscale,
+                    int output_wscale,
+                    int output_hscale,
                     int(*imgproc)(struct Image*, struct Image*) ) {
 
   struct Image *input = (struct Image *) malloc( sizeof( struct Image ) );
@@ -515,8 +515,8 @@ void test_fade( TestObjs *objs ) {
 }
 
 void test_kaleidoscope( TestObjs *objs ) {
-  test_with_png( "ingo",      "kaleidoscope", 0.5, 0.5, imgproc_kaleidoscope );
-  test_with_png( "landscape", "kaleidoscope", 0.5, 0.5, imgproc_kaleidoscope );
+  test_with_png( "ingo",      "kaleidoscope", 1, 1, imgproc_kaleidoscope );
+  test_with_png( "landscape", "kaleidoscope", 1, 1, imgproc_kaleidoscope );
 }
 
 void test_memory_leak( TestObjs *objs ) {
