@@ -205,29 +205,15 @@ int imgproc_kaleidoscope( struct Image *input_img, struct Image *output_img ) {
     }
   }
 
-  // top right
   for (int32_t i = 0; i < half; i++){
     for (int32_t j = 0; j < half; j++){
-      int32_t idx_original = compute_index(output_img, j, i);
-      int32_t idx_right    = compute_index(output_img, (width - 1 - j), i);
-      output_img->data[idx_right] = output_img->data[idx_original];
-    }
-  }
-
-  // bottom left
-  for (int32_t i = 0; i < half; i++) {
-    for (int32_t j = 0; j < half; j++) {
-      int32_t idx_original  = compute_index(output_img, j, i);
-      int32_t idx_bottom    = compute_index(output_img, j, (height - 1 - i));
-      output_img->data[idx_bottom] = output_img->data[idx_original];
-    }
-  }
-
-  // bottom right
-  for (int32_t i = 0; i < half; i++) {
-    for (int32_t j = 0; j < half; j++) {
       int32_t idx_original      = compute_index(output_img, j, i);
+      int32_t idx_top_right     = compute_index(output_img, (width - 1 - j), i);
+      int32_t idx_bottom_left   = compute_index(output_img, j, (height - 1 - i));
       int32_t idx_bottom_right  = compute_index(output_img, (width - 1 - j), (height - 1 - i));
+
+      output_img->data[idx_top_right] = output_img->data[idx_original];
+      output_img->data[idx_bottom_left] = output_img->data[idx_original];
       output_img->data[idx_bottom_right] = output_img->data[idx_original];
     }
   }
