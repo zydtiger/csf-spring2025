@@ -33,8 +33,8 @@ uint32_t to_grayscale( uint32_t pixel ) {
 
 // Compute the gradient needed for pixel at index `x`
 int64_t gradient( int64_t x, int64_t max ) {
-  // TODO: implement
-  return 0;
+  int64_t square = ((2000000000LL * x) / (1000000LL * max) - 1000);
+  return 1000000LL - square * square;
 }
 
 // Compute the 1-dimensional index from column and row indices
@@ -115,7 +115,37 @@ void imgproc_rgb( struct Image *input_img, struct Image *output_img ) {
 //   input_img - pointer to the input Image
 //   output_img - pointer to the output Image
 void imgproc_fade( struct Image *input_img, struct Image *output_img ) {
-  // TODO: implement
+  int64_t width = input_img->width;
+  int64_t height = input_img->height;
+
+  for (int64_t row = 0; row < height; row++){
+    int64_t row_fade = gradient(row, height);
+
+    for (int64_t col = 0; col < width; col++){
+      int64_t col_fade = gradient(col, width);
+
+      int32_t idx = compute_index(input_img, col, row);
+      uint32_t pixel = input_img->data[idx];
+
+      uint32_t r = get_r(pixel);
+      uint32_t g = get_g(pixel);
+      uint32_t b = get_b(pixel);
+      uint32_t a = get_a(pixel);
+
+      uint32_t r_faded = (row_fade * col_fade * r)/1000000000000LL;
+      uint32_t g_faded = (row_fade * col_fade * g)/1000000000000LL;
+      uint32_t b_faded = (row_fade * col_fade * b)/1000000000000LL;
+      uint32_t a_faded = a;
+
+      if (r_faded > 255) r_faded = 255;
+      if (g_faded > 255) g_faded = 255;
+      if (b_faded > 255) b_faded = 255;
+      output_img->data[idx] = make_pixel(r_faded, g_faded, b_faded, a_faded);
+  
+    }
+  }
+
+  
 }
 
 // Render a "kaleidoscope" transformation of input_img in output_img.
@@ -158,6 +188,51 @@ void imgproc_fade( struct Image *input_img, struct Image *output_img ) {
 //   1 if successful, 0 if the transformation fails because the
 //   width and height of input_img are not the same.
 int imgproc_kaleidoscope( struct Image *input_img, struct Image *output_img ) {
-  // TODO: implement
-  return 0;
+  int32_t width = input_img->width;
+  int32_t height = input_img->height;
+  if (width != height){
+    return 0;
+  }
+
+  if (width % 2 == 1){
+    width += 1;
+    height += 1;
+  }
+  int32_t half = (width) /2;
+
+  for (int32_t i = 0; i < half; i++){
+    for (int32_t j = i; j < half; j++){
+  
+      int32_t idx_in = compute_index(input_img, j, i);
+      uint32_t val = input_img->data[idx_in];
+
+      int32_t idx_out = compute_index(output_img, j, i);
+      output_img->data[idx_out] = val;
+      
+      if (i != j){
+        int32_t sym_idx = compute_index(output_img,i , j);
+        output_img->data[sym_idx] = val;
+      }
+    }
+  }
+  
+  for (int32_t i = 0; i < half; i++){
+    for (int32_t j = 0; j < half; j++){
+      int32_t index_old = compute_index(output_img, j, i);
+      uint32_t val = output_img->data[index_old];
+      int32_t index_new = compute_index(output_img, (width-1-j), i);
+      output_img->data[index_new] = val;
+    }
+  }
+
+  for (int32_t i = 0; i < half; i++) {
+    for (int32_t j = 0; j < width; j++) {
+      int32_t idxTop    = compute_index(output_img, j, i);
+      int32_t idxBottom = compute_index(output_img, j, (height - 1 - i));
+      uint32_t val = output_img->data[idxTop];
+
+      output_img->data[idxBottom] = val;
+    }
+  }
+  return 1;
 }

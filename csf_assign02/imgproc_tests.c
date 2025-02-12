@@ -598,8 +598,22 @@ void test_to_grayscale( TestObjs *objs ) {
 }
 
 void test_gradient( TestObjs *objs ) {
-  // TODO: implement
-  ASSERT(false);
+  {
+    int64_t result = gradient(0, 10); 
+    ASSERT(result == 0);
+  }
+  {
+    int64_t result = gradient(1, 1); 
+    ASSERT(result == 0);
+  }
+  {
+    int64_t result = gradient(2, 10);
+    ASSERT(result == 640000);
+  }
+  {
+    int64_t result = gradient(5, 10);
+    ASSERT(result == 1000000);
+  }
 }
 
 void test_compute_index( TestObjs *objs ) {
