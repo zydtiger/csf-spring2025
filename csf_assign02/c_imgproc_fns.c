@@ -192,7 +192,7 @@ int imgproc_kaleidoscope( struct Image *input_img, struct Image *output_img ) {
   int32_t height = input_img->height;
   if (width != height) return 0;
 
-  int32_t half = (width >> 1);
+  int32_t half = ((width + 1) >> 1);
 
   // top left  
   for (int32_t i = 0; i < half; i++){
