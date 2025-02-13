@@ -488,13 +488,13 @@ void test_kaleidoscope_odd( TestObjs *objs ) {
     TEST_COLORS,
     13, // width
     13, // height
-    "rrrrrrA      "
-    " gggggA      "
-    "  bbbbA      "
-    "   mmmA      "
-    "    ccA      "
-    "     rA      "
-    "      A      "
+    "rrrrrrm      "
+    " gggggm      "
+    "  bbbbm      "
+    "   mmmm      "
+    "    ccm      "
+    "     rm      "
+    "      m      "
     "             "
     "             "
     "             "
@@ -507,19 +507,19 @@ void test_kaleidoscope_odd( TestObjs *objs ) {
     TEST_COLORS,
     13, // width
     13, // height
-    "rrrrrrArrrrrr"
-    "rgggggAgggggr"
-    "rgbbbbAbbbbgr"
-    "rgbmmmAmmmbgr"
-    "rgbmccAccmbgr"
-    "rgbmcrArcmbgr"
-    "AAAAAAAAAAAAA"
-    "rgbmcrArcmbgr"
-    "rgbmccAccmbgr"
-    "rgbmmmAmmmbgr"
-    "rgbbbbAbbbbgr"
-    "rgggggAgggggr"
-    "rrrrrrArrrrrr"
+    "rrrrrrmmrrrrr"
+    "rgggggmmggggg"
+    "rgbbbbmmbbbbg"
+    "rgbmmmmmmmmbg"
+    "rgbmccmmccmbg"
+    "rgbmcrmmrcmbg"
+    "mmmmmmmmmmmmm"
+    "mmmmmmmmmmmmm"
+    "rgbmcrmmrcmbg"
+    "rgbmccmmccmbg"
+    "rgbmmmmmmmmbg"
+    "rgbbbbmmbbbbg"
+    "rgggggmmggggg"
   };
   
   struct Image *sq_test = picture_to_img( &sq_test_pic );
@@ -529,7 +529,7 @@ void test_kaleidoscope_odd( TestObjs *objs ) {
 
   imgproc_kaleidoscope( sq_test, sq_test_out );
 
-  ASSERT( images_equal( sq_test_kaleidoscope_expected, objs->sq_test_out ) );
+  ASSERT( images_equal( sq_test_kaleidoscope_expected, sq_test_out ) );
 
   destroy_img( sq_test );
   destroy_img( sq_test_kaleidoscope_expected );
