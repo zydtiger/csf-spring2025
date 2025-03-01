@@ -146,7 +146,28 @@ to_grayscale:
  */
   .globl gradient
 gradient:
-  /* TODO: implement */
+  pushq   %rbx                      # Save callee‑saved RBX
+  # Compute numerator = 2000000000 * x (x is in RDI)
+  imulq   $2000000000, %rdi, %rax   # RAX = 2000000000 * x
+  cqo                             # Sign‑extend RAX into RDX for division
+  # Compute denominator = 1000000 * max (max is in RSI)
+  imulq   $1000000, %rsi, %rcx      # RCX = 1000000 * max
+  idivq   %rcx                    # RAX = (2000000000*x) / (1000000*max)
+
+  # Compute square = (result) - 1000
+  subq    $1000, %rax             # RAX = temp – 1000
+  movq    %rax, %rbx              # Save square in RBX
+
+  # Compute square * square
+  movq    %rbx, %rax              # RAX = square
+  imulq   %rbx, %rax              # RAX = square * square
+
+  # Compute final result: 1000000 – (square * square)
+  movq    $1000000, %r8           # R8 = 1000000
+  subq    %rax, %r8             # R8 = 1000000 – square^2
+  movq    %r8, %rax             # Move result into RAX
+
+  popq    %rbx                  # Restore RBX
   ret
 
 /*
@@ -165,6 +186,95 @@ compute_index:
   imull %r10d, %eax                     # Multiply row index with image width
   addl %esi, %eax                       # Add column index to return register
   ret
+
+/*
+ * fade_pixel - Compute a faded version of an input pixel.
+ *
+ * This function computes a faded pixel value using two gradient factors.
+ * The fade effect is achieved by multiplying the red, green, and blue components
+ * of the input pixel by the product of gradrow and gradcol, then scaling the result
+ * by dividing by 1,000,000,000,000. The alpha channel is preserved.
+ *
+ * Parameters:
+ *   %rdi - gradrow (int64_t): vertical gradient factor.
+ *   %rsi - gradcol (int64_t): horizontal gradient factor.
+ *   %rdx - pixel (uint32_t): the input pixel in RGBA format.
+ *
+ * Returns:
+ *   A new faded pixel value as a uint32_t in %eax.
+ *
+ * Registers Used:
+ *   %rax, %rdx, %rcx for arithmetic operations.
+ *   %rbx, %r12, %r13, %r14, %r15 are preserved across calls.
+ */
+	.globl fade_pixel
+fade_pixel:
+    pushq   %rbp	#Save the pointer
+    pushq   %rbx	#Preserve rbx
+    pushq   %r12	#Preserve r12
+    pushq   %r13	#Preserve r13
+    pushq   %r14	#Preserve r14
+    pushq   %r15	#Preserve r15
+
+    
+    movq    %rdx, %rbx	# Save the input pixel (originally in rdx) into rbx for repeated use.
+
+    # Multiply the vertical and horizontal gradient factors.
+    # Input: gradrow in rdi, gradcol in rsi.
+    imulq   %rdi, %rsi       # Now rsi = gradrow * gradcol
+
+    # Load the constant divisor for scaling (1,000,000,000,000).
+    movq    $1000000000000, %rcx
+
+    # --- Process Red Channel ---
+    movq    %rbx, %rdi       # Pass the pixel to get_r.
+    call    get_r            # Result in eax (red channel)
+    imulq   %rsi, %rax       # Scale red by the gradient product.
+    xorq    %rdx, %rdx       # Clear rdx for division.
+    divq    %rcx             # Divide scaled red by the divisor.
+    movq    %rax, %r12       # Save faded red in r12.
+
+    # --- Process Green Channel ---
+    movq    %rbx, %rdi       # Pass the pixel to get_g.
+    call    get_g            # Result in eax (green channel)
+    imulq   %rsi, %rax       # Scale green by the gradient product.
+    xorq    %rdx, %rdx       # Clear rdx for division.
+    divq    %rcx             # Divide scaled green by the divisor.
+    movq    %rax, %r13       # Save faded green in r13.
+
+    # --- Process Blue Channel ---
+    movq    %rbx, %rdi       # Pass the pixel to get_b.
+    call    get_b            # Result in eax (blue channel)
+    imulq   %rsi, %rax       # Scale blue by the gradient product.
+    xorq    %rdx, %rdx       # Clear rdx for division.
+    divq    %rcx             # Divide scaled blue by the divisor.
+    movq    %rax, %r14       # Save faded blue in r14.
+
+    # --- Preserve Alpha Channel ---
+    movq    %rbx, %rdi       # Pass the pixel to get_a.
+    call    get_a            # Result in eax (alpha channel)
+    movq    %rax, %r15       # Save the original alpha in r15.
+
+    # --- Reassemble the Faded Pixel ---
+    # Pass the faded channels to make_pixel: red, green, blue, then alpha.
+    movq    %r12, %rdi       # Faded red as 1st argument.
+    movq    %r13, %rsi       # Faded green as 2nd argument.
+    movq    %r14, %rdx       # Faded blue as 3rd argument.
+    movq    %r15, %rcx       # Original alpha as 4th argument.
+    call    make_pixel       # Returns the new pixel in eax.
+
+    # Restore saved registers and the stack frame.
+    popq    %r15
+    popq    %r14
+    popq    %r13
+    popq    %r12
+    popq    %rbx
+    popq    %rbp
+    ret
+
+
+
+
 
 /*
  * Implementations of API functions
@@ -407,8 +517,89 @@ imgproc_grayscale:
  */
 	.globl imgproc_fade
 imgproc_fade:
-	/* TODO: implement */
-	ret
+    pushq   %rbp                # Save the old base pointer.
+    movq    %rsp, %rbp          # Establish the new base pointer.
+    subq    $8, %rsp            # Allocate 8 bytes for local storage.
+
+    # Retrieve the image dimensions from the input image structure.
+    movl    (%rdi), %r10d       # Load the image width into r10d.
+    movl    4(%rdi), %r11d      # Load the image height into r11d.
+
+    # Save the pointers to the input and output image structures.
+    movq    %rdi, %r14         # Save input image pointer in r14.
+    movq    %rsi, %r15         # Save output image pointer in r15.
+
+    # Initialize loop indices for rows and columns to 0.
+    xorl    %r12d, %r12d          # Set row index (i) to 0.
+    xorl    %r13d, %r13d          # Set column index (j) to 0.
+
+.row_loop:
+    cmpl    %r11d, %r12d       # Compare current row (i) with image height.
+    jae     .end_rows          # If i >= height, exit the row loop.
+    xorl    %r13d, %r13d	   # Reset column index (j) to 0 at the start of each row.
+
+.col_loop:
+    cmpl    %r10d, %r13d       # Compare current column (j) with image width.
+    jae     .end_cols          # If j >= width, finish the current row.
+
+    # Compute the 1D index of the current pixel.
+    # Parameters for compute_index: 
+    #   rdi = input image pointer, rsi = column index, rdx = row index.
+    movq    %r14, %rdi         # Pass input image pointer (stored in r14) in rdi.
+    movl    %r13d, %esi        # Pass column index (j) in rsi.
+    movl    %r12d, %edx        # Pass row index (i) in edx.
+    call    compute_index      # Compute the pixel's 1D index.
+    movl    %eax, %r9d         # Save the computed index in r9d.
+
+    # Retrieve the pixel value from the input image's data array.
+    pushq   %rbx               # Save rbx since it will be used to hold the pixel.
+    movq    8(%r14), %r8       # Load the pointer to the pixel data from the input image.
+    movl    (%r8, %r9, 4), %ebx  # Load the pixel at index r9d into ebx.
+
+    # Calculate the vertical gradient (gradrow) for the current pixel.
+    movq    %r12, %rdi         # Pass row index (i) as first parameter.
+    movq    %r11, %rsi         # Pass image height as second parameter.
+    pushq   %r12               # Temporarily save row index.
+    pushq   %r11               # Temporarily save image height.
+    call    gradient           # Compute vertical gradient.
+    popq    %r11               # Restore image height.
+    popq    %r12               # Restore row index.
+    pushq   %rax               # Save the computed gradrow on the stack.
+
+    # Calculate the horizontal gradient (gradcol) for the current pixel.
+    movq    %r13, %rdi         # Pass column index (j) as first parameter.
+    movq    %r10, %rsi         # Pass image width as second parameter.
+    pushq   %r13               # Temporarily save column index.
+    pushq   %r10               # Temporarily save image width.
+    call    gradient           # Compute horizontal gradient.
+    popq    %r10               # Restore image width.
+    popq    %r13               # Restore column index.
+    pushq   %rax               # Save the computed gradcol on the stack.
+
+    # Prepare to call fade_pixel by retrieving the gradient factors.
+    popq    %rsi               # Pop gradcol into rsi (second parameter for fade_pixel).
+    popq    %rdi               # Pop gradrow into rdi (first parameter for fade_pixel).
+    movq    %rbx, %rdx         # Move the pixel value from rbx into rdx (third parameter).
+    call    fade_pixel         # Call fade_pixel to compute the faded pixel.
+
+    popq    %rbx               # Restore rbx.
+
+    # Store the faded pixel in the output image.
+    movq    8(%r15), %r8       # Load the pointer to the output image's pixel data.
+    movl    %eax, (%r8, %r9, 4)  # Write the faded pixel at the computed index.
+
+    incl    %r13d              # Increment the column index (j).
+    jmp     .col_loop          # Repeat for the next column.
+
+.end_cols:
+    incl    %r12d              # Increment the row index (i) after completing a row.
+    jmp     .row_loop          # Repeat for the next row.
+
+.end_rows:
+    addq    $8, %rsp           # Deallocate the local variable space.
+    popq    %rbp               # Restore the original base pointer.
+    ret                        # Return to the caller.
+
 
 /*
  * Render a "kaleidoscope" transformation of input_img in output_img.
@@ -451,10 +642,359 @@ imgproc_fade:
  *   1 if successful, 0 if the transformation fails because the
  *   width and height of input_img are not the same.
  */
+
 	.globl imgproc_kaleidoscope
 imgproc_kaleidoscope:
-	/* TODO: implement */
-	ret
+    pushq   %rbp                            # Prologue: save old base pointer
+    movq    %rsp, %rbp                      # Establish new base pointer
+    subq    $32,  %rsp                      # Reserve 32 bytes on the stack
+
+    pushq   %r12                            # Save callee-saved register r12
+    pushq   %r13                            # Save callee-saved register r13
+    pushq   %r14                            # Save callee-saved register r14
+    pushq   %r15                            # Save callee-saved register r15
+    pushq   %r10                            # Save callee-saved register r10 (though not strictly "callee-saved," you had been using it)
+    pushq   %r11                            # Save callee-saved register r11 (same note as above)
+
+	movl    $0, %r12d                       # Initialize row index i = 0 in r12d
+
+    movl    (%rdi),  %r10d                  # Load width from *rdi into r10d
+    movl    4(%rdi), %r11d                  # Load height from *(rdi+4) into r11d
+
+    cmpl    %r10d, %r11d                    # Compare width (r10d) and height (r11d)
+    jne     .DIM_MISMATCH                   # If width != height, jump to return 0
+
+    movl    %r10d,  %r14d                   # Copy width into r14d
+    shrl    $1,     %r14d                   # Divide r14d (width) by 2
+    movl    %r11d,  %r15d                   # Copy height into r15d
+    shrl    $1,     %r15d                   # Divide r15d (height) by 2
+
+
+
+    movl    %r10d, %r9d                     # Move width into r9d (for odd check)
+    andl    $1,    %r9d                     # Mask out all but the least significant bit
+    cmpl    $1,    %r9d                     # Compare the result to 1
+    je      .ODDIM_PATH                     # If width is odd, jump to odd-dimension logic
+
+
+.EVEN_ROW_LOOP:                             # Start of the row loop for even dims
+
+    movl    %r12d, %ecx                     # Copy i into ecx
+    subl    %r15d, %ecx                     # ecx = i - (height/2)
+    js      .EVEN_PROCEED_ROW               # If ecx < 0 => i < height/2 => proceed
+    jmp     .EVEN_END_ROW                   # Otherwise, exit row loop
+
+.EVEN_PROCEED_ROW:                          # Continue row iteration
+    movl    %r12d, %r13d                    # Let j = i (r13d = i)
+
+.EVEN_COL_LOOP:                             # Column loop label
+    cmpl    %r14d, %r13d                    # Compare j to width/2
+    jae     .EVEN_END_COL                   # If j >= width/2, end column loop
+
+    movl    %r10d, %edx                     # edx = width
+    imull   %r12d, %edx                     # edx *= i (row index)
+    addl    %r13d, %edx                     # edx += j (column index)
+    movl    %edx,  %r9d                     # Store final pixel index in r9d
+
+    movq    %rdi,  %r8                      # r8 = input image pointer
+    addq    $8,    %r8                      # Skip past width/height in the struct
+    movq    (%r8), %r8                      # r8 = pointer to pixel array
+    movl    (%r8,%r9,4), %eax               # eax = pixel at index r9
+
+    movq    %rsi,  %r8                      # r8 = output image pointer
+    addq    $8,    %r8                      # Skip past width/height in the struct
+    movq    (%r8), %r8                      # r8 = pointer to output pixel array
+    movl    %eax,  (%r8,%r9,4)              # Write pixel to the same index in output (section A)
+
+    movl    %r10d, %edx                     # edx = width
+    imull   %r13d, %edx                     # edx *= j
+    addl    %r12d, %edx                     # edx += i
+    movl    %eax,  (%r8,%rdx,4)             # Store pixel in wedge B (swap i,j)
+
+    movl    %r10d, %edx                     # edx = width
+    imull   %r12d, %edx                     # edx *= i
+    addl    %r10d, %edx                     # edx += width
+    subl    $1,    %edx                     # edx -= 1
+    subl    %r13d, %edx                     # edx -= j
+    movl    %edx,  %r9d                     # r9d = mirrored index across vertical axis (A)
+    movl    %eax,  (%r8,%r9,4)              # Place pixel there
+
+    movl    %r10d, %edx                     # edx = width
+    imull   %r13d, %edx                     # edx *= j
+    addl    %r10d, %edx                     # edx += width
+    subl    $1,    %edx                     # edx -= 1
+    subl    %r12d, %edx                     # edx -= i
+    movl    %eax,  (%r8,%rdx,4)             # Mirror wedge B across vertical axis
+
+    movl    %r10d, %edx                     # edx = width
+    subl    $1,    %edx                     # edx -= 1
+    subl    %r12d, %edx                     # edx -= i
+    imull   %r10d, %edx                     # edx *= width
+    addl    %r13d, %edx                     # edx += j
+    movl    %eax,  (%r8,%rdx,4)             # Mirror A across horizontal axis (C)
+
+    movl    %r10d, %edx                     # edx = width
+    subl    $1,    %edx                     # edx -= 1
+    subl    %r13d, %edx                     # edx -= j
+    imull   %r10d, %edx                     # edx *= width
+    addl    %r12d, %edx                     # edx += i
+    movl    %eax,  (%r8,%rdx,4)             # Mirror B across horizontal axis (D)
+
+    movl    %r10d, %edx                     # edx = width
+    subl    $1,    %edx                     # edx -= 1
+    subl    %r13d, %edx                     # edx -= j
+    imull   %r10d, %edx                     # edx *= width
+    subl    $1,    %edx                     # edx -= 1
+    subl    %r12d, %edx                     # edx -= i
+    addl    %r10d, %edx                     # edx += width
+    movl    %edx,  %r9d                     # r9d = index for vertical mirror of C
+    movl    %eax,  (%r8,%r9,4)              # Write pixel
+
+    movl    %r10d, %edx                     # edx = width
+    subl    $1,    %edx                     # edx -= 1
+    subl    %r12d, %edx                     # edx -= i
+    imull   %r10d, %edx                     # edx *= width
+    subl    $1,    %edx                     # edx -= 1
+    subl    %r13d, %edx                     # edx -= j
+    addl    %r10d, %edx                     # edx += width
+    movl    %eax,  (%r8,%rdx,4)             # Mirror D across the vertical axis
+
+    incl    %r13d                            # j++
+    jmp     .EVEN_COL_LOOP                  # Go back to .EVEN_COL_LOOP
+
+.EVEN_END_COL:                              # End of column loop for even dims
+    incl    %r12d                            # i++
+    jmp     .EVEN_ROW_LOOP                  # Jump back to row loop start
+
+.EVEN_END_ROW:                              # Done processing even dims
+    popq    %r11                            # Restore r11
+    popq    %r10                            # Restore r10
+    popq    %r15                            # Restore r15
+    popq    %r14                            # Restore r14
+    popq    %r13                            # Restore r13
+    popq    %r12                            # Restore r12
+    addq    $32, %rsp                       # Deallocate stack space
+    popq    %rbp                            # Restore old base pointer
+    movl    $1, %eax                        # Return value = 1
+    ret                                     # Return from function
+
+.ODDIM_PATH:                                # Entry point for odd-dimension logic
+    incl    %r15d                           # r15d = height/2 + 1
+    incl    %r11d                           # r11d = height + 1
+
+.ODDIM_ROW_LOOP:                            # Row loop for odd dimension
+    cmpl    %r15d, %r12d                    # Compare i to (height/2 + 1)
+    jae     .ODDIM_END_ROW                  # If i >= that value, we're done
+
+    movl    %r12d, %r13d                    # Let j = i
+
+.ODDIM_COL_LOOP:                            # Column loop for odd dimension
+    cmpl    %r15d, %r13d                    # Compare j to (height/2 + 1)
+    jae     .ODDIM_END_COL
+    cmpl    %r11d, %r12d                    # Check i < real height
+    jge     .ODDIM_END_COL
+    cmpl    %r11d, %r13d                    # Check j < real height
+    jge     .ODDIM_END_COL
+
+    pushq   %rdi                            # Save rdi (input pointer)
+    pushq   %rsi                            # Save rsi (output pointer)
+    movl    %r11d, %edi                     # edi = height + 1
+    decl    %edi                            # edi = height
+    subl    %r12d, %edi                     # edi = height - i
+    cmpl    %r10d, %edi                     # compare with width
+    popq    %rsi                            # restore rsi
+    popq    %rdi                            # restore rdi
+    jge     .ODDIM_CHK_I                    # jump if mirrored row out of range
+
+    pushq   %rdi                            # Save rdi again
+    pushq   %rsi                            # Save rsi again
+    movl    %r11d, %edi                     # edi = height + 1
+    decl    %edi                            # edi = height
+    subl    %r13d, %edi                     # edi = height - j
+    cmpl    %r10d, %edi                     # compare with width
+    popq    %rsi                            # restore rsi
+    popq    %rdi                            # restore rdi
+    jge     .ODDIM_CHK_J                    # jump if mirrored col out of range
+
+    movl    %r10d, %edx                     # edx = width
+    imull   %r12d, %edx                     # edx *= i
+    addl    %r13d, %edx                     # edx += j
+    movl    %edx,  %r9d                     # pixel index
+
+    movq    %rdi,  %r8                      # r8 = input pointer
+    addq    $8,    %r8                      # skip first 8 bytes
+    movq    (%r8), %r8                      # r8 = input pixel array
+    movl    (%r8,%r9,4), %eax               # eax = pixel at [r8 + r9*4]
+
+    movq    %rsi,  %r8                      # r8 = output pointer
+    addq    $8,    %r8                      # skip first 8 bytes
+    movq    (%r8), %r8                      # r8 = output pixel array
+    movl    %eax,  (%r8,%r9,4)              # Write pixel to top-left wedge
+
+    movl    %r10d, %edx                     # edx = width
+    imull   %r13d, %edx                     # edx *= j
+    addl    %r12d, %edx                     # edx += i
+    movl    %eax,  (%r8,%rdx,4)             # Write pixel for wedge B (swap i/j)
+
+    movl    %r10d, %edx                     # Mirror across vertical axis (A)
+    imull   %r12d, %edx
+    addl    %r11d, %edx
+    decl    %edx
+    subl    %r13d, %edx
+    movl    %edx,  %r9d
+    movl    %eax,  (%r8,%r9,4)
+
+    movl    %r10d, %edx                     # Mirror across vertical axis (B)
+    imull   %r13d, %edx
+    addl    %r11d, %edx
+    decl    %edx
+    subl    %r12d, %edx
+    movl    %edx,  %r9d
+    movl    %eax,  (%r8,%r9,4)
+
+    movl    %r11d, %edx                     # Mirror A across horizontal axis (C)
+    decl    %edx
+    subl    %r12d, %edx
+    imull   %r10d, %edx
+    addl    %r13d, %edx
+    movl    %edx,  %r9d
+    movl    %eax,  (%r8,%r9,4)
+
+    movl    %r11d, %edx                     # Mirror B across horizontal axis (D)
+    decl    %edx
+    subl    %r13d, %edx
+    imull   %r10d, %edx
+    addl    %r12d, %edx
+    movl    %edx,  %r9d
+    movl    %eax,  (%r8,%r9,4)
+
+    movl    %r11d, %edx                     # Reflect C across vertical axis
+    decl    %edx
+    subl    %r12d, %edx
+    imull   %r10d, %edx
+    addl    %r11d, %edx
+    decl    %edx
+    subl    %r13d, %edx
+    movl    %edx,  %r9d
+    movl    %eax,  (%r8,%r9,4)
+
+    movl    %r11d, %edx                     # Another reflection of C
+    decl    %edx
+    subl    %r13d, %edx
+    imull   %r10d, %edx
+    addl    %r11d, %edx
+    decl    %edx
+    subl    %r12d, %edx
+    movl    %edx,  %r9d
+    movl    %eax,  (%r8,%r9,4)
+
+    incl    %r13d                            # j++
+    jmp     .ODDIM_COL_LOOP                 # Go back to .ODDIM_COL_LOOP
+
+.ODDIM_CHK_I:                               # Label for row boundary check
+    cmpl    $0, %r12d                       # Check if i == 0
+    je      .ODDIM_SPECIAL_I                # If i == 0, handle specially
+
+    incl    %r13d                            # Otherwise, j++
+    jmp     .ODDIM_COL_LOOP                 # Back to column loop
+
+.ODDIM_CHK_J:                               # Label for column boundary check
+    cmpl    $0, %r13d                       # Check if j == 0
+    je      .ODDIM_SPECIAL_J                # If j == 0, handle specially
+
+    incl    %r13d                            # Otherwise, j++
+    jmp     .ODDIM_COL_LOOP                 # Back to column loop
+
+.ODDIM_SPECIAL_I:                           # Special logic if i == 0
+    cmpl    %r15d, %r13d                    # Compare j vs half-height+1
+    jae     .ODDIM_END_COL                  # If j is out of range, end col loop
+
+    movl    %r10d, %edx                     # edx = width
+    imull   %r12d, %edx                     # edx *= i
+    addl    %r13d, %edx                     # edx += j
+    movl    %edx,  %r9d                     # r9d = pixel index
+
+    movq    %rdi,  %r8                      # r8 = input pointer
+    addq    $8,    %r8                      # skip 8 bytes
+    movq    (%r8), %r8                      # r8 = input pixel array
+    movl    (%r8,%r9,4), %eax               # eax = pixel
+
+    movq    %rsi,  %r8                      # r8 = output pointer
+    addq    $8,    %r8                      # skip 8 bytes
+    movq    (%r8), %r8                      # r8 = output pixel array
+    movl    %eax,  (%r8,%r9,4)              # Write pixel at same index
+
+    movl    %r10d, %edx                     # Wedge B
+    imull   %r13d, %edx
+    addl    %r12d, %edx
+    movl    %edx,  %r9d
+    movl    %eax,  (%r8,%r9,4)
+
+    movl    %r10d, %edx                     # Mirror across vertical axis
+    imull   %r12d, %edx
+    addl    %r11d, %edx
+    decl    %edx
+    subl    %r13d, %edx
+    movl    %edx,  %r9d
+    movl    %eax,  (%r8,%r9,4)
+
+    movl    %r11d, %edx                     # Mirror across horizontal axis
+    decl    %edx
+    subl    %r13d, %edx
+    imull   %r10d, %edx
+    addl    %r12d, %edx
+    movl    %edx,  %r9d
+    movl    %eax,  (%r8,%r9,4)
+
+    incl    %r13d                            # j++
+    jmp     .ODDIM_COL_LOOP                 # Continue columns
+
+.ODDIM_SPECIAL_J:                           # Special logic if j == 0
+    cmpl    %r15d, %r12d                    # Compare i vs half-height+1
+    jae     .ODDIM_END_ROW                  # If i out of range, end row loop
+
+    movl    %r10d, %edx                     # edx = width
+    imull   %r12d, %edx                     # edx *= i
+    addl    %r13d, %edx                     # edx += j
+    movl    %edx,  %r9d                     # pixel index
+
+    movq    %rdi,  %r8                      # r8 = input pointer
+    addq    $8,    %r8                      # skip first 8 bytes
+    movq    (%r8), %r8                      # r8 = input pixel array
+    movl    (%r8,%r9,4), %eax               # eax = pixel
+
+    incl    %r13d                            # j++
+    jmp     .ODDIM_COL_LOOP                 # loop again
+
+.ODDIM_END_COL:                             # End of col loop for odd dims
+    incl    %r12d                            # i++
+    jmp     .ODDIM_ROW_LOOP                 # back to row loop
+
+.ODDIM_END_ROW:                             # Done with row loop for odd dims
+    popq    %r11                            # Restore r11
+    popq    %r10                            # Restore r10
+    popq    %r15                            # Restore r15
+    popq    %r14                            # Restore r14
+    popq    %r13                            # Restore r13
+    popq    %r12                            # Restore r12
+    addq    $32, %rsp                       # Free stack space
+    popq    %rbp                            # Restore old base pointer
+    movl    $1, %eax                        # Return 1
+    ret                                     # Return from function
+
+.DIM_MISMATCH:                              # Jump target when width != height
+    popq    %r11                            # Restore r11
+    popq    %r10                            # Restore r10
+    popq    %r15                            # Restore r15
+    popq    %r14                            # Restore r14
+    popq    %r13                            # Restore r13
+    popq    %r12                            # Restore r12
+    addq    $32, %rsp                       # Release stack memory
+    popq    %rbp                            # Restore rbp
+    movl    $0, %eax                        # Return 0
+    ret                                     # Return
+
+
 
 	/* This avoids linker warning about executable stack */
 .section .note.GNU-stack,"",@progbits
