@@ -526,12 +526,13 @@ imgproc_fade:
     movl    4(%rdi), %r11d      # Load the image height into r11d.
 
     # Save the pointers to the input and output image structures.
+	movq    %rsi, %r15         # Save output image pointer in r15.
     movq    %rdi, %r14         # Save input image pointer in r14.
-    movq    %rsi, %r15         # Save output image pointer in r15.
-
+    
     # Initialize loop indices for rows and columns to 0.
+	xorl    %r13d, %r13d          # Set column index (j) to 0.
     xorl    %r12d, %r12d          # Set row index (i) to 0.
-    xorl    %r13d, %r13d          # Set column index (j) to 0.
+    
 
 .row_loop:
     cmpl    %r11d, %r12d       # Compare current row (i) with image height.
@@ -545,9 +546,9 @@ imgproc_fade:
     # Compute the 1D index of the current pixel.
     # Parameters for compute_index: 
     #   rdi = input image pointer, rsi = column index, rdx = row index.
+	movl    %r12d, %edx        # Pass row index (i) in edx.
     movq    %r14, %rdi         # Pass input image pointer (stored in r14) in rdi.
     movl    %r13d, %esi        # Pass column index (j) in rsi.
-    movl    %r12d, %edx        # Pass row index (i) in edx.
     call    compute_index      # Compute the pixel's 1D index.
     movl    %eax, %r9d         # Save the computed index in r9d.
 
@@ -557,23 +558,24 @@ imgproc_fade:
     movl    (%r8, %r9, 4), %ebx  # Load the pixel at index r9d into ebx.
 
     # Calculate the vertical gradient (gradrow) for the current pixel.
+	movq    %r11, %rsi         # Pass image height as second parameter.
     movq    %r12, %rdi         # Pass row index (i) as first parameter.
-    movq    %r11, %rsi         # Pass image height as second parameter.
+	pushq   %r11               # Temporarily save image height.
     pushq   %r12               # Temporarily save row index.
-    pushq   %r11               # Temporarily save image height.
     call    gradient           # Compute vertical gradient.
+	popq    %r12               # Restore row index.
     popq    %r11               # Restore image height.
-    popq    %r12               # Restore row index.
+    
     pushq   %rax               # Save the computed gradrow on the stack.
 
     # Calculate the horizontal gradient (gradcol) for the current pixel.
+	movq    %r10, %rsi         # Pass image width as second parameter.
     movq    %r13, %rdi         # Pass column index (j) as first parameter.
-    movq    %r10, %rsi         # Pass image width as second parameter.
+	pushq   %r10               # Temporarily save image width.
     pushq   %r13               # Temporarily save column index.
-    pushq   %r10               # Temporarily save image width.
     call    gradient           # Compute horizontal gradient.
+	popq    %r13               # Restore column index.
     popq    %r10               # Restore image width.
-    popq    %r13               # Restore column index.
     pushq   %rax               # Save the computed gradcol on the stack.
 
     # Prepare to call fade_pixel by retrieving the gradient factors.
@@ -646,15 +648,15 @@ imgproc_fade:
 	.globl imgproc_kaleidoscope
 imgproc_kaleidoscope:
     pushq   %rbp                            # Prologue: save old base pointer
+	pushq   %r12                            # Save callee-saved register r12
+    pushq   %r13                            # Save callee-saved register r13
     movq    %rsp, %rbp                      # Establish new base pointer
     subq    $32,  %rsp                      # Reserve 32 bytes on the stack
 
-    pushq   %r12                            # Save callee-saved register r12
-    pushq   %r13                            # Save callee-saved register r13
     pushq   %r14                            # Save callee-saved register r14
-    pushq   %r15                            # Save callee-saved register r15
     pushq   %r10                            # Save callee-saved register r10 (though not strictly "callee-saved," you had been using it)
     pushq   %r11                            # Save callee-saved register r11 (same note as above)
+	pushq   %r15                            # Save callee-saved register r15
 
 	movl    $0, %r12d                       # Initialize row index i = 0 in r12d
 
@@ -972,11 +974,11 @@ imgproc_kaleidoscope:
 
 .ODDIM_END_ROW:                             # Done with row loop for odd dims
     popq    %r11                            # Restore r11
+	popq    %r12                            # Restore r12
     popq    %r10                            # Restore r10
     popq    %r15                            # Restore r15
-    popq    %r14                            # Restore r14
     popq    %r13                            # Restore r13
-    popq    %r12                            # Restore r12
+    popq    %r14                            # Restore r14
     addq    $32, %rsp                       # Free stack space
     popq    %rbp                            # Restore old base pointer
     movl    $1, %eax                        # Return 1
@@ -984,11 +986,11 @@ imgproc_kaleidoscope:
 
 .DIM_MISMATCH:                              # Jump target when width != height
     popq    %r11                            # Restore r11
-    popq    %r10                            # Restore r10
     popq    %r15                            # Restore r15
-    popq    %r14                            # Restore r14
+    popq    %r10                            # Restore r10
     popq    %r13                            # Restore r13
     popq    %r12                            # Restore r12
+	popq    %r14                            # Restore r14
     addq    $32, %rsp                       # Release stack memory
     popq    %rbp                            # Restore rbp
     movl    $0, %eax                        # Return 0
