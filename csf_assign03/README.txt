@@ -1,3 +1,7 @@
-TODO: names of team members and their contributions to the project
+# Assignment 3
+
+## Students
+- Tiger Ding
+- Zihao Zhao
 
 TODO (for MS3): best cache report
