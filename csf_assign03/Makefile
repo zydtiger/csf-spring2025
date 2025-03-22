@@ -2,8 +2,11 @@ CXX = g++
 CXXFLAGS = -g -Wall -pedantic -std=c++17
 
 # Add any additional source files here
-SRCS = main.cpp
+SRCS = main.cpp cache.cpp debug.cpp
 OBJS = $(SRCS:.cpp=.o)
+
+TEST_SRCS = cache_tests.cpp cache.cpp debug.cpp
+TEST_OBJS = $(TEST_SRCS:.cpp=.o)
 
 # When submitting to Gradescope, submit all .cpp and .h files,
 # as well as README.txt
@@ -15,6 +18,10 @@ FILES_TO_SUBMIT = $(shell ls *.cpp *.h README.txt Makefile 2> /dev/null)
 
 # Executable target
 csim : $(OBJS)
+	$(CXX) -o $@ $+
+
+# Test target
+csim_test : $(TEST_OBJS)
 	$(CXX) -o $@ $+
 
 # Target to create a solution.zip file you can upload to Gradescope
@@ -30,6 +37,6 @@ depend.mak :
 	touch $@
 
 clean :
-	rm -f csim *.o
+	rm -f csim csim_test *.o
 
 include depend.mak
