@@ -1,4 +1,5 @@
 /csim
+/csim_test
 /*.o
 /depend.mak
 /solution.zip
