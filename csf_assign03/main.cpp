@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
   // parse args
   CacheConfig config;
   std::vector<std::string> args(argc);
-  for (int i = 0; i < argc; i++) args.push_back(argv[i]);
+  for (int i = 0; i < argc; i++) args[i] = argv[i];
   if (!parse_args(argc, args, config)) return 1;  // error termination
 
   Cache cache(config);
