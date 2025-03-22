@@ -3,7 +3,7 @@
 int Set::find_hit(uint32_t tag) {
   int slot_index = -1;
   for (int i = 0; i < slots.size(); i++) {
-    if (slots[i].tag == tag) {  // check for hit
+    if (slots[i].valid && slots[i].tag == tag) {  // check for hit
       slot_index = i;
       break;
     }
