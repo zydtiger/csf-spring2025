@@ -2,6 +2,7 @@
 #define CACHE_H
 
 #include <vector>
+#include <cstdint>
 
 #include "debug.h"
 
@@ -20,9 +21,9 @@ class Set {
 
  public:
   Set(size_t size) : slots(size) {}
-  size_t find_hit(uint32_t tag);
-  size_t find_victim_slot();
-  void update_lru(int reference);
+  int find_hit(uint32_t tag);
+  int find_victim_slot();
+  void update_lru(uint32_t reference);
   Slot& operator[](size_t index) { return this->slots[index]; }
   const Slot& operator[](size_t index) const { return this->slots[index]; }
 };

@@ -4,6 +4,7 @@
 #include <bitset>
 #include <iomanip>
 #include <iostream>
+#include <cstdint>
 
 class Cache;
 

@@ -1,30 +1,28 @@
 #include "cache.h"
 
-size_t Set::find_hit(uint32_t tag) {
-  size_t slot_index = -1;
-  for (size_t i = 0; i < slots.size(); i++) {
-    if (slots[i].valid && slots[i].tag == tag) {  // check for hit
-      slot_index = i;
-      break;
-    }
-  }
-  return slot_index;
+int Set::find_hit(uint32_t tag) {
+  for (size_t i = 0; i < slots.size(); i++)
+    if (slots[i].valid && slots[i].tag == tag) return i;
+  return -1;
 }
 
-size_t Set::find_victim_slot() {
-  size_t slot_index = -1;
+int Set::find_victim_slot() {
   for (size_t i = 0; i < slots.size(); i++) {
     Slot &slot = slots[i];
-    if (!slot.valid ||  // found empty slot or least used slot
-        slot.access_order == slots.size() - 1) {
+    if (!slot.valid) return i;
+  }
+  int slot_index = 0;
+  uint32_t max_order = slots[0].access_order;
+  for (size_t i=0;i<slots.size();i++) {
+    if (slots[i].access_order > max_order) {
+      max_order = slots[i].access_order;
       slot_index = i;
-      break;
     }
   }
   return slot_index;
 }
 
-void Set::update_lru(int reference) {
+void Set::update_lru(uint32_t reference) {
   for (Slot &slot : slots) {
     if (slot.valid && slot.access_order < reference) {
       slot.access_order++;
@@ -98,7 +96,7 @@ void Cache::save(uint32_t address) {
 
     // increment access order that is smaller than the current hit
     set.update_lru(set[slot_index].access_order);
-    set[slot_index].access_order = 0;
+    set[slot_index].access_order = 0; //?
 
   } else {
     this->stats.store_misses++;
