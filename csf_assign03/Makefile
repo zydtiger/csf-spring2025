@@ -21,8 +21,8 @@ csim : $(OBJS)
 	$(CXX) -o $@ $+
 
 # Test target
-csim_test : $(TEST_OBJS)
-	$(CXX) -o $@ $+
+csim_test : $(TEST_OBJS) csim
+	$(CXX) -o $@ $(TEST_OBJS)
 
 # Target to create a solution.zip file you can upload to Gradescope
 .PHONY: solution.zip
