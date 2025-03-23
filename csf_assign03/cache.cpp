@@ -67,14 +67,14 @@ void Cache::load(uint32_t address) {
     slot_index = set.find_victim_slot();
     if (set[slot_index].valid && set[slot_index].dirty &&
         !config.write_through) {
-      // memory write of current cache takes 100 cycles
-      this->stats.total_cycles += 100;
+      // dump occupied, memory access takes 100 cycles per 4 bytes
+      this->stats.total_cycles += 100 * config.block_size / 4;
     }
     set.update_lru(config.num_blocks);  // increment all slots
     set[slot_index] = {
         .tag = tag, .valid = 1, .dirty = false, .access_order = 0};
 
-    // memory access takes 100 cycles per 4 bytes
+    // load from ram and then cache
     this->stats.total_cycles += 1 + 100 * config.block_size / 4;
   }
 
@@ -94,13 +94,13 @@ void Cache::save(uint32_t address) {
   if (slot_index != -1) {  // hit!!!!
     this->stats.store_hits++;
 
-    // hit takes 1 cycles, ram takes 100 cycles
     if (config.write_through) {
-      this->stats.total_cycles += 101;
+      this->stats.total_cycles += 100;  // write to memory directly
+      if (config.write_allocate)
+        this->stats.total_cycles++;  // also write to cache to sync
     } else {
-      // write to cache only
       set[slot_index].dirty = true;
-      this->stats.total_cycles++;  // cache takes 1 cycle
+      this->stats.total_cycles++;  // write to cache only
     }
 
     // increment access order that is smaller than the current hit
@@ -111,7 +111,8 @@ void Cache::save(uint32_t address) {
     this->stats.store_misses++;
 
     if (!config.write_allocate) {
-      this->stats.total_cycles += 100;  // write directly to ram
+      // write to ram directly
+      this->stats.total_cycles += 100;
       return;
     }
 
@@ -119,23 +120,23 @@ void Cache::save(uint32_t address) {
     slot_index = set.find_victim_slot();
     if (set[slot_index].valid && set[slot_index].dirty &&
         !config.write_through) {
-      // memory write of current cache takes 100 cycles
-      this->stats.total_cycles += 100;
+      // write occupied to ram
+      this->stats.total_cycles += 100 * config.block_size / 4;
     }
 
     set.update_lru(config.num_blocks);  // increment all slots
     set[slot_index] = {
         .tag = tag, .valid = 1, .dirty = false, .access_order = 0};
 
-    // load into cache, memory access takes 100 cycles per 4 bytes
+    // load from ram
     this->stats.total_cycles += 100 * config.block_size / 4;
 
     if (config.write_through) {
       set[slot_index].dirty = false;
-      this->stats.total_cycles += 101;
+      this->stats.total_cycles += 101;  // write to cache & ram
     } else {
       set[slot_index].dirty = true;
-      this->stats.total_cycles += 1;
+      this->stats.total_cycles += 1;  // write to cache only
     }
   }
 
