@@ -1,8 +1,8 @@
 #include "cache.h"
 
-int Set::find_hit(uint32_t tag) {
-  int slot_index = -1;
-  for (int i = 0; i < slots.size(); i++) {
+size_t Set::find_hit(uint32_t tag) {
+  size_t slot_index = -1;
+  for (size_t i = 0; i < slots.size(); i++) {
     if (slots[i].valid && slots[i].tag == tag) {  // check for hit
       slot_index = i;
       break;
@@ -11,9 +11,9 @@ int Set::find_hit(uint32_t tag) {
   return slot_index;
 }
 
-int Set::find_victim_slot() {
-  int slot_index = -1;
-  for (int i = 0; i < slots.size(); i++) {
+size_t Set::find_victim_slot() {
+  size_t slot_index = -1;
+  for (size_t i = 0; i < slots.size(); i++) {
     Slot &slot = slots[i];
     if (!slot.valid ||  // found empty slot or least used slot
         slot.access_order == slots.size() - 1) {
@@ -34,13 +34,7 @@ void Set::update_lru(int reference) {
 
 Cache::Cache(CacheConfig config) : config(config) {
   this->sets.resize(config.num_sets, Set(config.num_blocks));
-  this->stats = {.total_loads = 0,
-                 .total_stores = 0,
-                 .load_hits = 0,
-                 .load_misses = 0,
-                 .store_hits = 0,
-                 .store_misses = 0,
-                 .total_cycles = 0};
+  this->stats = {0, 0, 0, 0, 0, 0, 0};
 }
 
 void Cache::load(uint32_t address) {
@@ -71,8 +65,7 @@ void Cache::load(uint32_t address) {
       this->stats.total_cycles += 100 * config.block_size / 4;
     }
     set.update_lru(config.num_blocks);  // increment all slots
-    set[slot_index] = {
-        .tag = tag, .valid = 1, .dirty = false, .access_order = 0};
+    set[slot_index] = {tag, true, false, 0};
 
     // load from ram and then cache
     this->stats.total_cycles += 1 + 100 * config.block_size / 4;
@@ -125,8 +118,7 @@ void Cache::save(uint32_t address) {
     }
 
     set.update_lru(config.num_blocks);  // increment all slots
-    set[slot_index] = {
-        .tag = tag, .valid = 1, .dirty = false, .access_order = 0};
+    set[slot_index] = {tag, true, false, 0};
 
     // load from ram
     this->stats.total_cycles += 100 * config.block_size / 4;

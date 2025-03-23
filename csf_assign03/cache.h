@@ -20,8 +20,8 @@ class Set {
 
  public:
   Set(size_t size) : slots(size) {}
-  int find_hit(uint32_t tag);
-  int find_victim_slot();
+  size_t find_hit(uint32_t tag);
+  size_t find_victim_slot();
   void update_lru(int reference);
   Slot& operator[](size_t index) { return this->slots[index]; }
   const Slot& operator[](size_t index) const { return this->slots[index]; }
