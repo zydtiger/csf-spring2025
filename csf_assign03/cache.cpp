@@ -13,7 +13,7 @@ int Set::find_victim_slot() {
   }
   int slot_index = 0;
   uint32_t max_order = slots[0].access_order;
-  for (size_t i=0;i<slots.size();i++) {
+  for (size_t i = 0; i < slots.size(); i++) {
     if (slots[i].access_order > max_order) {
       max_order = slots[i].access_order;
       slot_index = i;
@@ -96,7 +96,7 @@ void Cache::save(uint32_t address) {
 
     // increment access order that is smaller than the current hit
     set.update_lru(set[slot_index].access_order);
-    set[slot_index].access_order = 0; //?
+    set[slot_index].access_order = 0;
 
   } else {
     this->stats.store_misses++;
