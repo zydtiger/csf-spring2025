@@ -15,19 +15,12 @@ void debug_print(const Cache &c) {
   std::cout << std::string(80, '-') << std::endl;
   std::cout << "Index ";
   std::cout << std::string(19, ' ') << "Tag" << std::string(19, ' ');
-  std::cout << "Valid ";
   std::cout << "Dirty " << std::endl;
 
   size_t tag_bits = 32 - log2(c.config.num_sets) - log2(c.config.block_size);
 
   for (uint32_t i = 0; i < c.config.num_sets; i++) {
-    bool is_set_any_valid = false;
-    for (uint32_t j = 0; j < c.config.num_blocks; j++)
-      if (c.sets[i][j].valid) {
-        is_set_any_valid = true;
-        break;
-      }
-    if (!is_set_any_valid) continue;
+    if (c.sets[i].get_valid_count() == 0) continue;
 
     std::cout << std::left << std::setw(5) << i;
 
@@ -36,7 +29,6 @@ void debug_print(const Cache &c) {
 
       if (j != 0) std::cout << std::string(5, ' ');
       std::cout << " " << std::right << std::setw(40) << tag_str;
-      std::cout << " " << std::right << std::setw(5) << c.sets[i][j].valid;
       std::cout << " " << std::right << std::setw(5) << c.sets[i][j].dirty;
       std::cout << std::endl;
     }

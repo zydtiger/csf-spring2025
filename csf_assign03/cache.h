@@ -1,15 +1,14 @@
 #ifndef CACHE_H
 #define CACHE_H
 
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 #include "debug.h"
 
 // Actual slot that mocks cache
 struct Slot {
   uint32_t tag;
-  bool valid;
   bool dirty;
   uint32_t access_order;  // 0 = frequently used
 };
@@ -17,13 +16,16 @@ struct Slot {
 // Each set of slots
 class Set {
  private:
-  std::vector<Slot> slots;
+  std::vector<Slot> slots;  // valid slots are all at the head
+  int valid_count;          // tracks no. of valid slots
+  int max_index;
 
  public:
-  Set(size_t size) : slots(size) {}
+  Set(size_t size) : slots(size), valid_count(0), max_index(0) {}
   int find_hit(uint32_t tag);
   int find_victim_slot();
   void update_lru(uint32_t reference);
+  int get_valid_count() const { return valid_count; }
   Slot& operator[](size_t index) { return this->slots[index]; }
   const Slot& operator[](size_t index) const { return this->slots[index]; }
 };

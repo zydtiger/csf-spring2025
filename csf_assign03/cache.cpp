@@ -1,31 +1,23 @@
 #include "cache.h"
 
 int Set::find_hit(uint32_t tag) {
-  for (size_t i = 0; i < slots.size(); i++)
-    if (slots[i].valid && slots[i].tag == tag) return i;
+  for (size_t i = 0; i < valid_count; i++)
+    if (slots[i].tag == tag) return i;
   return -1;
 }
 
 int Set::find_victim_slot() {
-  for (size_t i = 0; i < slots.size(); i++) {
-    Slot &slot = slots[i];
-    if (!slot.valid) return i;
-  }
-  int slot_index = 0;
-  uint32_t max_order = slots[0].access_order;
-  for (size_t i = 0; i < slots.size(); i++) {
-    if (slots[i].access_order > max_order) {
-      max_order = slots[i].access_order;
-      slot_index = i;
-    }
-  }
-  return slot_index;
+  if (valid_count == slots.capacity()) return max_index;
+  return valid_count++;
 }
 
 void Set::update_lru(uint32_t reference) {
-  for (Slot &slot : slots) {
-    if (slot.valid && slot.access_order < reference) {
-      slot.access_order++;
+  for (size_t i = 0; i < valid_count; i++) {
+    if (slots[i].access_order < reference) {
+      slots[i].access_order++;
+      if (slots[i].access_order > slots[max_index].access_order) {
+        max_index = i;
+      }
     }
   }
 }
@@ -57,13 +49,12 @@ void Cache::load(uint32_t address) {
 
     // find a slot to overwrite
     slot_index = set.find_victim_slot();
-    if (set[slot_index].valid && set[slot_index].dirty &&
-        !config.write_through) {
+    if (set[slot_index].dirty && !config.write_through) {
       // dump occupied, memory access takes 100 cycles per 4 bytes
       this->stats.total_cycles += 100 * config.block_size / 4;
     }
     set.update_lru(config.num_blocks);  // increment all slots
-    set[slot_index] = {tag, true, false, 0};
+    set[slot_index] = {tag, false, 0};
 
     // load from ram and then cache
     this->stats.total_cycles += 1 + 100 * config.block_size / 4;
@@ -109,14 +100,13 @@ void Cache::save(uint32_t address) {
 
     // find a slot to overwrite
     slot_index = set.find_victim_slot();
-    if (set[slot_index].valid && set[slot_index].dirty &&
-        !config.write_through) {
+    if (set[slot_index].dirty && !config.write_through) {
       // write occupied to ram
       this->stats.total_cycles += 100 * config.block_size / 4;
     }
 
     set.update_lru(config.num_blocks);  // increment all slots
-    set[slot_index] = {tag, true, false, 0};
+    set[slot_index] = {tag, false, 0};
 
     // load from ram
     this->stats.total_cycles += 100 * config.block_size / 4;
