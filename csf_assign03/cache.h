@@ -18,10 +18,9 @@ class Set {
  private:
   std::vector<Slot> slots;  // valid slots are all at the head
   int valid_count;          // tracks no. of valid slots
-  int max_index;
 
  public:
-  Set(size_t size) : slots(size), valid_count(0), max_index(0) {}
+  Set(size_t size) : slots(size), valid_count(0) {}
   int find_hit(uint32_t tag);
   int find_victim_slot();
   void update_lru(uint32_t reference);

@@ -7,7 +7,15 @@ int Set::find_hit(uint32_t tag) {
 }
 
 int Set::find_victim_slot() {
-  if (valid_count == slots.capacity()) return max_index;
+  if (valid_count == slots.capacity()) {
+    int lru_index = 0;
+    for (size_t i = 0; i < valid_count; i++) {
+      if (slots[i].access_order > slots[lru_index].access_order) {
+        lru_index = i;
+      }
+    }
+    return lru_index;
+  }
   return valid_count++;
 }
 
@@ -15,9 +23,6 @@ void Set::update_lru(uint32_t reference) {
   for (size_t i = 0; i < valid_count; i++) {
     if (slots[i].access_order < reference) {
       slots[i].access_order++;
-      if (slots[i].access_order > slots[max_index].access_order) {
-        max_index = i;
-      }
     }
   }
 }
