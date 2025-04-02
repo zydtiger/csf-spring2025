@@ -138,11 +138,11 @@ int main(void) {
   test_args_correct();
   test_args_incorrect();
   test_config(0, 1, 1);  // no-write-allocate + write-through + lru
-  // test_config(0, 1, 0);  // no-write-allocate + write-through + fifo
+  test_config(0, 1, 0);  // no-write-allocate + write-through + fifo
   test_config(1, 1, 1);  // write-allocate + write-through + lru
-  // test_config(1, 1, 0);  // write-allocate + write-through + fifo
+  test_config(1, 1, 0);  // write-allocate + write-through + fifo
   test_config(1, 0, 1);  // write-allocate + write-back + lru
-  // test_config(1, 0, 0);  // write-allocate + write-back + fifo
+  test_config(1, 0, 0);  // write-allocate + write-back + fifo
 
   cleanup_test();
 

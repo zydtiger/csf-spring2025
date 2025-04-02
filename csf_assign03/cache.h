@@ -11,19 +11,25 @@ struct Slot {
   uint32_t tag;
   bool dirty;
   uint32_t access_order;  // 0 = frequently used
+  uint64_t insertion_time;
 };
 
 // Each set of slots
 class Set {
  private:
   std::vector<Slot> slots;  // valid slots are all at the head
-  int valid_count;          // tracks no. of valid slots
+  size_t valid_count;          // tracks no. of valid slots
+  uint64_t fifo_counter;  
 
  public:
   Set(size_t size) : slots(size), valid_count(0) {}
   int find_hit(uint32_t tag);
-  int find_victim_slot();
+  int find_victim_slot(bool is_lru);
   void update_lru(uint32_t reference);
+  void mark_insertion_fifo(size_t slot_index) {
+    slots[slot_index].access_order = fifo_counter;
+    fifo_counter++;
+  }
   int get_valid_count() const { return valid_count; }
   Slot& operator[](size_t index) { return this->slots[index]; }
   const Slot& operator[](size_t index) const { return this->slots[index]; }
