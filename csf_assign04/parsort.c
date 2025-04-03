@@ -4,16 +4,22 @@
 #include <assert.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+
+struct child_t {
+  pid_t pid;
+  int success;
+};
 
 int compare( const void *left, const void *right );
 void swap( int64_t *arr, unsigned long i, unsigned long j );
 unsigned long partition( int64_t *arr, unsigned long start, unsigned long end );
 int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned long par_threshold );
-
-// TODO: declare additional helper functions if needed
+void spawn_child( struct child_t *child, int64_t *arr, unsigned long start, unsigned long end, unsigned long par_threshold );
+void wait_children( struct child_t *left, struct child_t *right );
 
 int main( int argc, char **argv ) {
   unsigned long par_threshold;
@@ -25,15 +31,30 @@ int main( int argc, char **argv ) {
   int fd;
 
   // open the named file
-  // TODO: open the named file
+  fd = open(argv[1], O_RDWR);
+  if ( fd < 0 ) {
+    fprintf( stderr, "Error: file couldn't be opened!\n" );
+    exit( 1 );
+  }
 
   // determine file size and number of elements
-  unsigned long file_size, num_elements;
-  // TODO: determine the file size and number of elements
+  struct stat statbuf;
+  int rc = fstat( fd, &statbuf );
+  if ( rc != 0 ) {
+    fprintf( stderr, "Error: file stats couldn't be read!\n" );
+    exit( 1 );
+  }
+  unsigned long file_size = statbuf.st_size;
+  unsigned long num_elements = file_size / sizeof(int64_t);  
 
   // mmap the file data
   int64_t *arr;
-  // TODO: mmap the file data
+  arr = mmap( NULL, file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
+  close( fd );
+  if ( arr == MAP_FAILED ) {
+    fprintf( stderr, "Error: data couldn't be mapped!\n" );
+    exit( 1 );
+  }
 
   // Sort the data!
   int success;
@@ -44,7 +65,7 @@ int main( int argc, char **argv ) {
   }
 
   // Unmap the file data
-  // TODO: unmap the file data
+  munmap( arr, file_size );
 
   return 0;
 }
@@ -175,13 +196,61 @@ int quicksort( int64_t *arr, unsigned long start, unsigned long end, unsigned lo
   // Partition
   unsigned long mid = partition( arr, start, end );
 
-  // Recursively sort the left and right partitions
-  int left_success, right_success;
-  // TODO: modify this code so that the recursive calls execute in child processes
-  left_success = quicksort( arr, start, mid, par_threshold );
-  right_success = quicksort( arr, mid + 1, end, par_threshold );
+  // Spawn child processes
+  struct child_t left, right;
+  spawn_child( &left, arr, start, mid, par_threshold );
+  if ( left.pid < 0 ) {
+    fprintf( stderr, "Error: fork failed for left partition!\n" );
+    return 0;
+  }
+  
+  spawn_child( &right, arr, mid+1, end, par_threshold );
+  if ( right.pid < 0 ) {
+    fprintf( stderr, "Error: fork failed for right partition!\n" );
+    kill( left.pid, SIGTERM ); // kill left process if right fails to spawn
+    waitpid( left.pid, NULL, 0 );
+    return 0;
+  }
 
-  return left_success && right_success;
+  wait_children( &left, &right );
+
+  return left.success && right.success;
 }
 
-// TODO: define additional helper functions if needed
+void spawn_child( struct child_t *child, int64_t *arr, unsigned long start, unsigned long end, unsigned long par_threshold ) {
+  child->pid = fork();
+  if ( child->pid == 0 ) { // at child
+    exit( quicksort( arr, start, end, par_threshold ) );
+  }
+}
+
+void wait_children( struct child_t *left, struct child_t *right ) {
+  int left_status, right_status;
+
+  left->success = 0;
+  right-> success = 0;
+
+  if ( waitpid(left->pid, &left_status, 0) < 0 ) {
+    fprintf( stderr, "Error: waiting for left child process failed!\n" );
+    kill( right->pid, SIGTERM ); // kill right process if left fails wait
+    waitpid( right->pid, NULL, 0 );
+    return;
+  }
+
+  if ( WIFEXITED(left_status) ) {
+    left->success = WEXITSTATUS( left_status );
+  } else {
+    fprintf( stderr, "Error: left child process exited abnormally\n" );
+  }
+
+  if ( waitpid(right->pid, &right_status, 0) < 0 ) {
+    fprintf( stderr, "Error: waiting for right child process failed!\n" );
+    return;
+  }
+
+  if ( WIFEXITED(right_status) ) {
+    right->success = WEXITSTATUS( right_status );
+  } else {
+    fprintf( stderr, "Error: right child process exited abnormally\n" );
+  }
+}
