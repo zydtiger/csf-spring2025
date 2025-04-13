@@ -22,7 +22,7 @@ CXX_SENDER_OBJS = $(CXX_SENDER_SRCS:.cpp=.o)
 
 # Common C++ source/object files used by both server
 # and clients
-CXX_COMMON_SRCS = connection.cpp
+CXX_COMMON_SRCS = connection.cpp message.cpp
 CXX_COMMON_OBJS = $(CXX_COMMON_SRCS:.cpp=.o)
 
 # Common C++ source/object files used only by the clients

@@ -3,6 +3,10 @@
 
 #include <vector>
 #include <string>
+#include <stdexcept>
+
+// Strips the string of \r\n or \n at the end.
+std::string stripend(std::string s);
 
 struct Message {
   // An encoded message may have at most this many characters,
@@ -14,12 +18,13 @@ struct Message {
   std::string tag;
   std::string data;
 
-  Message() { }
+  Message() {}
+  Message(const std::string &tag, const std::string &rawdata);
+  Message(const std::string &msg);
 
-  Message(const std::string &tag, const std::string &data)
-    : tag(tag), data(data) { }
-
-  // TODO: you could add helper functions
+  std::string to_string() const {
+    return tag + ":" + data + "\n";
+  }
 };
 
 // standard message tags (note that you don't need to worry about
