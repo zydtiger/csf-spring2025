@@ -26,28 +26,28 @@ int main(int argc, char **argv) {
   // send rlogin and join messages (expect a response from
   //       the server for each one)
   if (!conn.send(Message(TAG_RLOGIN, username))) {
-    fprintf(stderr, "Receiver login failed to send!\n");
+    std::cerr << "Receiver login failed to send!" << std::endl;
     return -1;
   }
   if (!conn.receive(msg)) {
-    fprintf(stderr, "Failed to receive message from server!\n");
+    std::cerr << "Failed to receive message from server!" << std::endl;
     return -1;
   }
   if (msg.tag != TAG_OK) {
-    fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+    std::cerr <<  msg.data << std::endl;
     return -1;
   }
 
   if (!conn.send(Message(TAG_JOIN, room_name))) {
-    fprintf(stderr, "Join room request failed to send!\n");
+    std::cerr << "Join room request failed to send!" << std::endl;
     return -1;
   }
   if (!conn.receive(msg)) {
-    fprintf(stderr, "Failed to receive message from server!\n");
+    std::cerr << "Failed to receive message from server!" << std::endl;
     return -1;
   }
   if (msg.tag != TAG_OK) {
-    fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+    std::cerr << msg.data << std::endl;
     return -1;
   }
   
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
   //       (which should be tagged with TAG_DELIVERY)
   while (true) {
     if (!conn.receive(msg)) {
-      fprintf(stderr, "Failed to receive message from server!\n");
+      std::cerr << "Failed to receive message from server!" << std::endl;
       return -1;
     }
 
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
       std::cout << sender_name << ": " << message << std::endl;
     } else {
-      fprintf(stderr, "Unexpected message: %s", msg.to_string().c_str());
+      std::cerr << "Unexpected message: " << msg.to_string();
     }
   }
 

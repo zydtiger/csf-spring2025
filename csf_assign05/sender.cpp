@@ -28,17 +28,17 @@ int main(int argc, char **argv) {
 
   // Sender login
   if (!conn.send(Message(TAG_SLOGIN, username))) {
-    fprintf(stderr, "Sender login failed to send!\n");
+    std::cerr << "Sender login failed to send!" << std::endl;
     return -1;
   }
 
   // Wait til server responds
   if (!conn.receive(msg)) {
-    fprintf(stderr, "Failed to receive message from server!\n");
+    std::cerr << "Failed to receive message from server!" << std::endl;
     return -1;
   }
   if (msg.tag != TAG_OK) {
-    fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+    std::cerr << msg.data << std::endl;
     return -1;
   }
 
@@ -57,40 +57,40 @@ int main(int argc, char **argv) {
     if (line.length() >= 5 && line.substr(0, 5) == "/join") {
       size_t space_pos = line.find(' ');
       if (space_pos == std::string::npos) {
-        fprintf(stderr, "Room name cannot be empty!\n");
+        std::cerr << "Room name cannot be empty!" << std::endl;
         continue;
       }
       std::string room_name = line.substr(space_pos+1);
       if (room_name.empty()) {
-        fprintf(stderr, "Room name cannot be empty!\n");
+        std::cerr << "Room name cannot be empty!" << std::endl;
         continue;
       }
 
       if (joined_room) { // leave room first
         if (!conn.send(Message(TAG_LEAVE, ""))) {
-          fprintf(stderr, "Leave room request failed to send!\n");
+          std::cerr << "Leave room request failed to send!" << std::endl;
           continue;
         }
         if (!conn.receive(msg)) {
-          fprintf(stderr, "Failed to receive message from server!\n");
+          std::cerr << "Failed to receive message from server!" << std::endl;
           continue;
         }
         if (msg.tag != TAG_OK) {
-          fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+          std::cerr << msg.data << std::endl;
           continue;
         }
       }
 
       if (!conn.send(Message(TAG_JOIN, room_name))) {
-        fprintf(stderr, "Join room request failed to send!\n");
+        std::cerr << "Join room request failed to send!" << std::endl;
         continue;
       }
       if (!conn.receive(msg)) {
-        fprintf(stderr, "Failed to receive message from server!\n");
+        std::cerr << "Failed to receive message from server!" << std::endl;
         continue;
       }
       if (msg.tag != TAG_OK) {
-        fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+        std::cerr << msg.data << std::endl;
         continue;
       }
 
@@ -100,15 +100,15 @@ int main(int argc, char **argv) {
     // Leave room
     else if (line == "/leave") {
       if (!conn.send(Message(TAG_LEAVE, ""))) {
-        fprintf(stderr, "Leave room request failed to send!\n");
+        std::cerr << "Leave room request failed to send!" << std::endl;
         continue;
       }
       if (!conn.receive(msg)) {
-        fprintf(stderr, "Failed to receive message from server!\n");
+        std::cerr << "Failed to receive message from server!" << std::endl;
         continue;
       }
       if (msg.tag != TAG_OK) {
-        fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+        std::cerr << msg.data << std::endl;
         continue;
       }
 
@@ -118,15 +118,15 @@ int main(int argc, char **argv) {
     // Quit
     else if (line == "/quit") {
       if (!conn.send(Message(TAG_QUIT, ""))) {
-        fprintf(stderr, "Quit request failed to send!\n");
+        std::cerr << "Quit request failed to send!" << std::endl;
         continue;
       }
       if (!conn.receive(msg)) {
-        fprintf(stderr, "Failed to receive message from server!\n");
+        std::cerr << "Failed to receive message from server!" << std::endl;
         continue;
       }
       if (msg.tag != TAG_OK) {
-        fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+        std::cerr << msg.data << std::endl;
         continue;
       }
 
@@ -136,21 +136,21 @@ int main(int argc, char **argv) {
     // Send to room
     else if (joined_room) {
       if (!conn.send(Message(TAG_SENDALL, line))) {
-        fprintf(stderr, "Message to room failed to send!\n");
+        std::cerr << "Message to room failed to send!" << std::endl;
         continue;
       }
       if (!conn.receive(msg)) {
-        fprintf(stderr, "Failed to receive message from server!\n");
+        std::cerr << "Failed to receive message from server!" << std::endl;
         continue;
       }
       if (msg.tag != TAG_OK) {
-        fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+        std::cerr << msg.data << std::endl;
         continue;
       }
     }
 
     else {
-      fprintf(stderr, "You must use `/join [room_name]` first!\n");
+      std::cerr << "You must use `/join [room_name]` first!" << std::endl;
     }
   }
 
