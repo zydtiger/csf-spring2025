@@ -19,15 +19,58 @@ int main(int argc, char **argv) {
   std::string room_name = argv[4];
 
   Connection conn;
+  Message msg;
 
-  // TODO: connect to server
+  conn.connect(server_hostname, server_port);
 
-  // TODO: send rlogin and join messages (expect a response from
+  // send rlogin and join messages (expect a response from
   //       the server for each one)
+  if (!conn.send(Message(TAG_RLOGIN, username))) {
+    fprintf(stderr, "Receiver login failed to send!\n");
+    return -1;
+  }
+  if (!conn.receive(msg)) {
+    fprintf(stderr, "Failed to receive message from server!\n");
+    return -1;
+  }
+  if (msg.tag != TAG_OK) {
+    fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+    return -1;
+  }
 
-  // TODO: loop waiting for messages from server
+  if (!conn.send(Message(TAG_JOIN, room_name))) {
+    fprintf(stderr, "Join room request failed to send!\n");
+    return -1;
+  }
+  if (!conn.receive(msg)) {
+    fprintf(stderr, "Failed to receive message from server!\n");
+    return -1;
+  }
+  if (msg.tag != TAG_OK) {
+    fprintf(stderr, "Server error: %s\n", msg.data.c_str());
+    return -1;
+  }
+  
+  // loop waiting for messages from server
   //       (which should be tagged with TAG_DELIVERY)
+  while (true) {
+    if (!conn.receive(msg)) {
+      fprintf(stderr, "Failed to receive message from server!\n");
+      return -1;
+    }
 
+    if (msg.tag == TAG_DELIVERY) {
+      size_t colon_pos = msg.data.find(":");
+      std::string sender_info = msg.data.substr(colon_pos+1);
+      colon_pos = sender_info.find(":");
+      std::string sender_name = sender_info.substr(0, colon_pos);
+      std::string message = sender_info.substr(colon_pos+1);
+
+      std::cout << sender_name << ": " << message << std::endl;
+    } else {
+      fprintf(stderr, "Unexpected message: %s", msg.to_string().c_str());
+    }
+  }
 
   return 0;
 }
